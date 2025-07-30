@@ -11,15 +11,17 @@ import Avatar from '../../components/Avatar';
 
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 
+
 const Home = () => {
   const { user, setAuth } = useAuth();
   const router = useRouter();
 
-  // Use expo-camera new hook to manage permissions
-
+  // Camera permissions and state
+  const [permission, requestPermission] = useCameraPermissions();
+  const [facing, setFacing] = useState(CameraType.back);
 
   function toggleCameraFacing() {
-    setFacing((current) => (current === 'back' ? 'front' : 'back'));
+    setFacing((current) => (current === CameraType.back ? CameraType.front : CameraType.back));
   }
 
   // Optional: implement logout here if needed
@@ -32,17 +34,24 @@ const Home = () => {
   };
   **/
 
+  if (!permission) {
+    return null;
+  }
+
+  if (!permission.granted) {
+    return (
       <ScreenWrapper bg={theme.colors.background}>
-        <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}> 
           <Text style={styles.message}>We need your permission to show the camera</Text>
           <TouchableOpacity onPress={requestPermission} style={styles.permissionButton}>
             <Text style={styles.permissionButtonText}>Grant Permission</Text>
           </TouchableOpacity>
         </View>
       </ScreenWrapper>
+    );
   }
 
-  
+  return (
     <ScreenWrapper bg={theme.colors.background}>
       <View style={styles.container}>
         {/* Header */}
@@ -60,10 +69,17 @@ const Home = () => {
         </View>
 
         {/* Camera */}
-        
+        <CameraView
+          style={styles.camera}
+          facing={facing}
+        />
+        <TouchableOpacity style={styles.buttonContainer} onPress={toggleCameraFacing}>
+          <Text style={styles.text}>Flip Camera</Text>
+        </TouchableOpacity>
       </View>
     </ScreenWrapper>
-
+  );
+};
 
 export default Home;
 
