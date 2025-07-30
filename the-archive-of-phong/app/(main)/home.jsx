@@ -1,117 +1,121 @@
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native'
-import React from 'react'
-import ScreenWrapper from '../../components/ScreenWrapper'
-import { Button } from '@react-navigation/elements'
-import { useAuth } from '../../contexts/AuthContext'
-import { supabase } from '../../lib/supabase'
-import { hp, wp } from '../../helpers/common'
-import { theme } from '../../constants/theme'
-import Icon from '../../assets/icons'
-import { useRouter } from 'expo-router'
-import Avatar from '../../components/Avatar'
+import React, { useState } from 'react';
+import { Alert, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import ScreenWrapper from '../../components/ScreenWrapper';
+import { useAuth } from '../../contexts/AuthContext';
+import { supabase } from '../../lib/supabase';
+import { hp, wp } from '../../helpers/common';
+import { theme } from '../../constants/theme';
+import Icon from '../../assets/icons';
+import { useRouter } from 'expo-router';
+import Avatar from '../../components/Avatar';
+
+import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 
 const Home = () => {
-    const {user, setAuth} = useAuth();
-    const router = useRouter();
+  const { user, setAuth } = useAuth();
+  const router = useRouter();
+
+  // Use expo-camera new hook to manage permissions
 
 
-    console.log('user:', user);
-    /**const onLogout = async() => {
-        //setAuth(null);
-        const {error} = await supabase.auth.signOut();
-        if (error){
-            Alert.alert('Logout', "Error signing out!")
-        }
-        
+  function toggleCameraFacing() {
+    setFacing((current) => (current === 'back' ? 'front' : 'back'));
+  }
 
-    } */
-  return (
-    <ScreenWrapper bg = 'white'>
-        <View style = {styles. container}>
-            {/**header */}
-            <View style = {styles.header}>
-                <Text style = {styles.title}>TAP </Text>
-                <View style = {styles.icons}>
-                    <Pressable onPress={() => router.push('notifications')}>
-                        <Icon name='heart' size={hp(3.2)} strokeWidth = {2} color ={theme.colors.text}/>
-                    </Pressable>
-                    <Pressable onPress={() => router.push('newPost')}>
-                        <Icon name='plus' size={hp(3.2)} strokeWidth = {2} color ={theme.colors.text}/>
-                    </Pressable>
-                    <Pressable onPress={() => router.push('profile')}>
-                        <Avatar
-                            url={user?.image}
-                            size = {hp(3.6)}
-                            rounded= {0}
-                            style = {{borderWidth : 0}}
-                        />
-                    </Pressable>
-                </View>
-            </View>
+  // Optional: implement logout here if needed
+  /** 
+  const onLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      Alert.alert('Logout', 'Error signing out!');
+    }
+  };
+  **/
+
+      <ScreenWrapper bg={theme.colors.background}>
+        <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+          <Text style={styles.message}>We need your permission to show the camera</Text>
+          <TouchableOpacity onPress={requestPermission} style={styles.permissionButton}>
+            <Text style={styles.permissionButtonText}>Grant Permission</Text>
+          </TouchableOpacity>
+        </View>
+      </ScreenWrapper>
+  }
+
+  
+    <ScreenWrapper bg={theme.colors.background}>
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.icons}>
+            <Pressable onPress={() => router.push('profile')}>
+              <Avatar url={user?.image} size={hp(3.6)} rounded={0} style={{ borderWidth: 0 }} />
+            </Pressable>
+          </View>
+          <View style={styles.icons}>
+            <Pressable onPress={() => router.push('notification')}>
+              <Icon name="bell" size={40} />
+            </Pressable>
+          </View>
         </View>
 
-      {/*<Button title = 'logout' onPress={onLogout}/>*/}
+        {/* Camera */}
+        
+      </View>
     </ScreenWrapper>
-  )
-}
 
-export default Home
+
+export default Home;
 
 const styles = StyleSheet.create({
-
-    container: {
-        flex: 1,
-        //paddingHorizontal: wp (4)
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: 10,
-        marginHorizontal: wp(4),
-    },
-    title: {
-        color: theme.colors.text,
-        fontSize: hp(3.2),
-        fontWeight: theme.fonts.bold,
-    },
-    avatarImage: {
-        height: hp(4.3),
-        width: hp(4.3),
-        borderRadius: theme.radius.sm,
-        borderCurve: 'continuous',
-        borderColor: 'theme.colors.gray',
-        borderWidth: 3,
-    },
-    icons: {
-        flexDirection:'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: 18
-    },
-    listStyle: {
-        paddingTop: 20,
-        paddingHorizontal: wp(4),
-    },
-    noPosts: {
-        fontSize: hp(2),
-        textAlign: 'center',
-        color: theme.colors.text,
-    },
-    pill: {
-        position: 'absolute',
-        right: -10,
-        top: -4,
-        height: hp(2.2),
-        width: hp(2.2),
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderRadius: 20,
-        backgroundColor: theme.colors.roseLight,
-    },
-    pillText:{
-        color: 'white',
-        fontSize: hp(1.2),
-        fontWeight: theme.fonts.bold,
-    }
-})
+  container: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+    marginHorizontal: wp(4),
+  },
+  icons: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 18,
+  },
+  message: {
+    textAlign: 'center',
+    paddingBottom: 10,
+    color: theme.colors.text,
+  },
+  permissionButton: {
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  permissionButtonText: {
+    color: 'white',
+    fontSize: 16,
+  },
+  camera: {
+    flex: 1,
+  },
+  buttonContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    backgroundColor: 'transparent',
+    margin: 64,
+  },
+  button: {
+    flex: 1,
+    alignSelf: 'flex-end',
+    alignItems: 'center',
+  },
+  text: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+});

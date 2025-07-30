@@ -12,7 +12,7 @@ const Input = (props) => {
       }
       <TextInput
         style = {{flex: 1}}
-        placeholderTextColor={theme.colors.textLight}
+        placeholderTextColor={theme.colors.text}
         ref = {props.inputRef && props.inputRef}
         {...props}
         />

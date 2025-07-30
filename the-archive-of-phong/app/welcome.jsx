@@ -9,11 +9,11 @@ import { useRouter } from 'expo-router'
 const Welcome = () => {
   const router = useRouter();
   return (
-    <ScreenWrapper bg = "white">
+    <ScreenWrapper bg = {theme.colors.background}>
       <StatusBar style = "dark" />
       <View style = {styles.container}>
           {/** welcome image */}
-          <Image style={styles.welcomeImage} resizeMode='contain' source={require ('../assets/images/welcome.png')} />
+          <Image style={styles.welcomeImage} resizeMode='contain' source={require ('../assets/images/lhp_logo.png')} />
           {/** title */}
           <View style={{gap :20}}>
 
@@ -22,12 +22,12 @@ const Welcome = () => {
           </Text>
 
           <Text style={styles.punchline}>
-              1000 days of hapiness.
+              1000 ngày luôn hạnh phúc.
           </Text>    
       </View>
       <View style = {styles.footer}>
         <Button 
-        title = "Getting Started"
+        title = "Bắt đầu thui!"
         buttonStyle = {{marginHorizontal: wp(3)}}
         onPress={()=> router.push('signUp')}
 
@@ -36,11 +36,11 @@ const Welcome = () => {
         />
         <View style = {styles.bottomTextContainer }>
           <Text style = {styles.loginText}>
-            Already have an account?
+            Bạn đã có tài khoản?
           </Text>
           <Pressable onPress={() => router.push('login')}>
           <Text style = {[styles.loginText, {color:theme.colors.primaryDark, fontWeight: theme.fonts.semibold}]}>
-            Login
+           Đăng nhập
           </Text>
         </Pressable>
         </View> 
@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
     flex: 1, 
     alignItems: 'center',
     justifyContent: 'space-around',
-    backgroundColor: 'white',
+    backgroundColor: theme.colors.background,
     marginHorizontal: wp(4)
   },
   welcomeImage: {

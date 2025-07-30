@@ -21,6 +21,8 @@ import Send from './Send'
 import Share from './Share'
 import User from './User'
 import Video from './Video'
+import Users from './Users'
+import Bell from './Bell'
 
 
 const icons = {
@@ -43,6 +45,8 @@ const icons = {
     share: Share,
     user: User,
     video: Video,
+    users: Users,
+    bell: Bell,
     
 }
 const Icon = ({name, color, strokeWidth, ...props}) => {

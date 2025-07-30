@@ -1,4 +1,4 @@
-import { Alert, StyleSheet, Text, TextInput, View, Pressable } from 'react-native'
+import { Alert, StyleSheet, Text, TextInput, View, Pressable, Modal } from 'react-native'
 import React, { useState, useRef } from 'react'
 import ScreenWrapper from '../components/ScreenWrapper'
 import { theme } from '../constants/theme'
@@ -10,6 +10,7 @@ import { hp, wp } from '../helpers/common'
 import Input from '../components/Input'
 import Button from '../components/Button'
 import { supabase } from '../lib/supabase'
+import ClassChoiceList from '../components/ClassChoiceList'; // Import your new component
 
 const SignUp = () => {
     const router = useRouter();
@@ -17,80 +18,173 @@ const SignUp = () => {
     const nameRef = useRef("");
     const passwordRef = useRef("");
     const [loading, setLoading] = useState(false);
-    const onSubmit = async ()=>{
-      if (!emailRef.current || !passwordRef.current){
-        Alert.alert('SignUp', 'please fill all the fields!');
-        return;
-      }
-      // good to go
-      let name = nameRef.current.trim();
-      let email = emailRef.current.trim();
-      let password = passwordRef.current.trim();
+    const [selectedClass, setSelectedClass] = useState(null);
+    const [classModalVisible, setClassModalVisible] = useState(false);
 
-      setLoading(true);
+const onSubmit = async ()=>{
+  if (!emailRef.current || !passwordRef.current || !selectedClass) {
+    Alert.alert('SignUp', 'please fill all the fields!');
+    return;
+  }
 
-      const {data: {session}, error} = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            name
-          }
-        }
-      })
-      setLoading(false);
-      //console.log('session: ', session);
-      //console.log('error: ', error);
-      if (error){
-        Alert.alert('Sign up', error.message);
-      }
+  let name = nameRef.current.trim();
+  let email = emailRef.current.trim();
+  let password = passwordRef.current.trim();
 
+  setLoading(true);
+
+  // First, sign up the user
+  const { data: { user, session }, error: signUpError } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        name,
+        // Keep metadata if needed
+      },
+    },
+  });
+
+  if (signUpError) {
+    setLoading(false);
+    Alert.alert('Sign up', signUpError.message);
+    return;
+  }
+
+  // Then, update the users table with the class
+  if (user) {
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({ class: selectedClass })
+      .eq('id', user.id);
+
+    if (updateError) {
+      Alert.alert('Update Error', updateError.message);
     }
+  }
+
+  setLoading(false);
+}
+    // const onSubmit = async ()=>{
+    //   if (!emailRef.current || !passwordRef.current || !selectedClass) {
+    //     Alert.alert('SignUp', 'please fill all the fields!');
+    //     return;
+    //   }
+    //   // good to go
+    //   let name = nameRef.current.trim();
+    //   let email = emailRef.current.trim();
+    //   let password = passwordRef.current.trim();
+
+    //   setLoading(true);
+
+    //   const {data: {session}, error} = await supabase.auth.signUp({
+    //     email,
+    //     password,
+    //     options: {
+    //       data: {
+    //         name,
+    //         class: selectedClass, // Save the class in user metadata
+    //       },
+    //     },
+    //   })
+    //   setLoading(false);
+    //   //console.log('session: ', session);
+    //   //console.log('error: ', error);
+    //   if (error){
+    //     Alert.alert('Sign up', error.message);
+    //   }
+
+    // }
   return (
-    <ScreenWrapper bg = 'white'>
+    <ScreenWrapper bg={theme.colors.background}>
       <StatusBar style = 'dark' />
       <View style={styles.container}>
         <BackButton router ={router} />
         {/**welcome Text */}
         <View>
-            <Text style = {styles.welcomeText}> Let's </Text>
-            <Text style = {styles.welcomeText}> Get started</Text>
+            <Text style = {styles.welcomeText}> Phần 1: </Text>
+            <Text style = {styles.welcomeText}> Điền vào chỗ trống</Text>
         </View>
-
+      
 
 
 
         {/**form Text */}
         <View style = {styles.form}>
           <Text style = {{fontSize: hp(1.5), color: theme.colors.text}}>
-            Please fill the details to create a new account
+            Xin vui lòng điền đầy đủ thông tin
           </Text>
           <Input
             icon = {<Icon name = "user" size={26} strokeWidth={1.6}/>}
-            placeholder = 'Enter your name'
+            placeholder = 'Họ và tên khớp với thẻ học sinh'
             onChangeText = {value => nameRef.current = value}
 
           />
+
           <Input
             icon = {<Icon name = "mail" size={26} strokeWidth={1.6}/>}
-            placeholder = 'Enter your email'
+            placeholder = 'Email'
             onChangeText = {value =>emailRef.current = value}
 
           />
           <Input
             icon = {<Icon name = "lock" size={26} strokeWidth={1.6}/>}
-            placeholder = 'Enter your password'
+            placeholder = 'Mật khẩu'
             secureTextEntry
             onChangeText = {value =>passwordRef.current = value}
           />
+          {/* Class selection styled like Input */}
+          <Pressable
+            style={styles.inputlist}
+            onPress={() => setClassModalVisible(true)}
+          >
+            <Icon name="users" size={26} strokeWidth={1.6} />
+            <Text style={{ color: theme.colors.text, fontSize: hp(1.5) }}>
+              {selectedClass ? `Lớp: ${selectedClass}` : 'Chọn lớp của bạn'}
+            </Text>
+          </Pressable>
+          {/* Modal for class selection */}
+          <Modal
+            visible={classModalVisible}
+            transparent
+            animationType="slide"
+            onRequestClose={() => setClassModalVisible(false)}
+          >
+            <View style={{
+              flex: 1,
+              backgroundColor: 'rgba(0,0,0,0.3)',
+              justifyContent: 'center',
+              alignItems: 'center'
+            }}>
+              <View style={{
+                backgroundColor: 'white',
+                borderRadius: 12,
+                padding: 20,
+                width: '80%'
+              }}>
+                <Text style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 16 }}>Chọn lớp</Text>
+                <ClassChoiceList
+                  onSelect={cls => {
+                    setSelectedClass(cls);
+                    setClassModalVisible(false);
+                  }}
+                />
+                <Pressable onPress={() => setClassModalVisible(false)} style={{ marginTop: 16 }}>
+                  
+                  <Text style={{ color: theme.colors.primaryDark, textAlign: 'center' }}>Đóng</Text>
+               
+                </Pressable>
+              </View>
+            </View>
+          </Modal>
           {/**button */}
-          <Button title ={'Sign up'} loading = {loading} onPress = {onSubmit} />
+          <Button title ={'Đăng kí'} loading = {loading} onPress = {onSubmit} />  
 
           {/**footer */}
           <View style = {styles.footer}>
-            <Text style = {styles.footerText}>Already have an account?</Text>
+            <Text style = {styles.footerText}>Đã có tài khoản?</Text>
             <Pressable onPress={() => router.push('login')}>
-              <Text style = {[styles.footerText, {color: theme.colors.primaryDark, fontWeight: theme.fonts.semibold}]}>Login</Text>
+              <Text style = {[styles.footerText, {color: theme.colors.primaryDark, fontWeight: theme.fonts.semibold}]}>Đăng nhập</Text>
             </Pressable>
 
           </View>
@@ -144,8 +238,26 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: theme.colors.text,
     fontSize: hp(1.6)
-  }
-
-
-
+  },
+  input: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: 8,
+    marginTop: 10,
+  },
+  inputlist: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  borderWidth: 0.4,
+  borderColor: theme.colors.text,
+  borderRadius: theme.radius.xxl,
+  borderCurve: 'continuous',
+  padding: 25,
+  paddingHorizontal: 20,
+  gap: 15,
+  marginBottom: 10,
+},
 })

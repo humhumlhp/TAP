@@ -35,14 +35,14 @@ const Login = () => {
 
     }
   return (
-    <ScreenWrapper bg = 'white'>
+    <ScreenWrapper bg = {theme.colors.background}>
       <StatusBar style = 'dark' />
       <View style={styles.container}>
         <BackButton router ={router} />
         {/**welcome Text */}
         <View>
-            <Text style = {styles.welcomeText}> Hey,</Text>
-            <Text style = {styles.welcomeText}> Welcome Back</Text>
+            <Text style = {styles.welcomeText}> Eyyyy,</Text>
+            <Text style = {styles.welcomeText}> quay lại rồi hả?</Text>
         </View>
 
 
@@ -51,29 +51,29 @@ const Login = () => {
         {/**form Text */}
         <View style = {styles.form}>
           <Text style = {{fontSize: hp(1.5), color: theme.colors.text}}>
-            Please login to continue
+            Xin hãy tiếp tục
           </Text>
           <Input
             icon = {<Icon name = "mail" size={26} strokeWidth={1.6}/>}
-            placeholder = 'Enter your email'
+            placeholder = 'Email đăng kí'
             onChangeText = {value =>emailRef.current = value}
 
           />
           <Input
             icon = {<Icon name = "lock" size={26} strokeWidth={1.6}/>}
-            placeholder = 'Enter your password'
+            placeholder = 'Mật khẩu'
             secureTextEntry
             onChangeText = {value =>passwordRef.current = value}
           />
-          <Text style = {styles.forgotPassword}>Forgot password?</Text>
+          <Text style = {styles.forgotPassword}>Quên mật khẩu?</Text>
           {/**button */}
-          <Button title ={'Login'} loading = {loading} onPress = {onSubmit} />
+          <Button title ={'Đăng nhập'} loading = {loading} onPress = {onSubmit} />
 
           {/**footer */}
           <View style = {styles.footer}>
-            <Text style = {styles.footerText}>Don't have an account?</Text>
+            <Text style = {styles.footerText}>Không có tài khoản?</Text>
             <Pressable onPress={() => router.push('signUp')}>
-              <Text style = {[styles.footerText, {color: theme.colors.primaryDark, fontWeight: theme.fonts.semibold}]}>Sign Up</Text>
+              <Text style = {[styles.footerText, {color: theme.colors.primaryDark, fontWeight: theme.fonts.semibold}]}>Đăng kí</Text>
             </Pressable>
 
           </View>
