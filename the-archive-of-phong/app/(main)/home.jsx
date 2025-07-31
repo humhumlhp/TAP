@@ -1,4 +1,4 @@
-import { Alert, Pressable, StyleSheet, Text, View, TouchableOpacity, TextInput } from 'react-native'
+import { Alert, Pressable, StyleSheet, Text, View, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native'
 import React, { useRef, useState, useEffect } from 'react'
 import ScreenWrapper from '../../components/ScreenWrapper'
 import { useAuth } from '../../contexts/AuthContext'
@@ -14,6 +14,7 @@ import AntDesign from "@expo/vector-icons/AntDesign"
 import Feather from "@expo/vector-icons/Feather"
 import Ionicons from "@expo/vector-icons/Ionicons"
 import MaterialIcons from "@expo/vector-icons/MaterialIcons"
+import { uploadService } from '../../services/uploadService'
 
 const Home = () => {
     const { user, setAuth } = useAuth();
@@ -29,6 +30,7 @@ const Home = () => {
     const [isCameraReady, setIsCameraReady] = useState(false);
     const [isScreenFocused, setIsScreenFocused] = useState(true);
     const [messageText, setMessageText] = useState('');
+    const [isUploading, setIsUploading] = useState(false);
 
     console.log('user:', user);
 
@@ -128,28 +130,177 @@ const Home = () => {
         setMessageText(''); // Clear message when retaking
     };
 
-    // Send photo with message
-    const sendPhoto = () => {
-        if (capturedImage) {
-            // Here you would implement sending the photo and message
-            console.log('Sending photo:', capturedImage);
-            console.log('With message:', messageText);
-            console.log('Target audience:', targetAudience);
-            
-            Alert.alert('Success', `Photo sent to ${targetAudience}!`, [
-                { text: 'OK', onPress: () => {
-                    setCapturedImage(null);
-                    setMessageText('');
-                }}
-            ]);
-        }
-    };
-
     // Handle target audience change
     const handleAudienceChange = (audience) => {
         setTargetAudience(audience);
     };
 
+    // Validate user data before sending photo
+    const validateUserData = async () => {
+        if (!user?.id) {
+            Alert.alert('Error', 'User not authenticated');
+            return false;
+        }
+
+        // Check if user has required school/class data for non-personal posts
+        if (targetAudience !== 'yourself') {
+            const { data: userData, error } = await supabase
+                .from('users')
+                .select('school, class')
+                .eq('id', user.id)
+                .single();
+
+            if (error || !userData) {
+                Alert.alert('Error', 'Unable to fetch user information');
+                return false;
+            }
+
+            if (targetAudience === 'school' && !userData.school) {
+                Alert.alert('Missing Information', 'Please update your school information in profile');
+                return false;
+            }
+
+            if (targetAudience === 'class' && (!userData.school || !userData.class)) {
+                Alert.alert('Missing Information', 'Please update your school and class information in profile');
+                return false;
+            }
+        }
+
+        return true;
+    };
+
+    // Send photo with message
+    const sendPhoto = async () => {
+        await testDatabaseSchema(); // Add this line temporarily
+        if (!capturedImage) {
+            Alert.alert('Error', 'No image to upload');
+            return;
+        }
+
+        // Validate user data first
+        const isValid = await validateUserData();
+        if (!isValid) return;
+
+        setIsUploading(true);
+
+        try {
+            console.log('Starting upload process...');
+            
+            const result = await uploadService.uploadAndCreatePost(
+                capturedImage,
+                messageText,
+                targetAudience,
+                user.id
+            );
+
+            console.log('Upload successful:', result);
+
+            // Show success message with audience info
+            const audienceText = targetAudience === 'yourself' 
+                ? 'your personal collection' 
+                : `${result.audienceCount} people in your ${targetAudience}`;
+
+            Alert.alert(
+                'Success!', 
+                `Photo shared with ${audienceText}!`,
+                [
+                    { 
+                        text: 'OK', 
+                        onPress: () => {
+                            setCapturedImage(null);
+                            setMessageText('');
+                            setTargetAudience('yourself'); // Reset to default
+                        }
+                    }
+                ]
+            );
+
+        } catch (error) {
+            console.error('Upload failed:', error);
+            
+            Alert.alert(
+                'Upload Failed', 
+                error.message || 'Something went wrong. Please try again.',
+                [
+                    { text: 'OK' }
+                ]
+            );
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    // Upload overlay component
+    const UploadOverlay = ({ isVisible, message = "Uploading..." }) => {
+        if (!isVisible) return null;
+
+        return (
+            <View style={styles.uploadingOverlay}>
+                <ActivityIndicator size="large" color="white" />
+                <Text style={styles.uploadingText}>{message}</Text>
+            </View>
+        );
+    };
+    // Add this to your Home.jsx temporarily to test database schema
+
+const testDatabaseSchema = async () => {
+    try {
+        console.log('=== DATABASE SCHEMA TEST ===');
+        
+        // Test 1: Check what columns exist in posts table
+        const { data: posts, error: postsError } = await supabase
+            .from('posts')
+            .select('*')
+            .limit(1);
+            
+        console.log('Posts table test:', { data: posts, error: postsError });
+        
+        // Test 2: Try to insert a minimal post to see exact error
+        const testPost = {
+            body: 'test',
+            file: 'https://via.placeholder.com/300',
+            userId: user.id,  // Try camelCase first
+            audience_type: 'yourself'
+        };
+        
+        console.log('Attempting to insert test post:', testPost);
+        
+        const { data: insertResult, error: insertError } = await supabase
+            .from('posts')
+            .insert([testPost])
+            .select()
+            .single();
+            
+        console.log('Insert test result:', { data: insertResult, error: insertError });
+        
+        if (insertError) {
+            // Try with lowercase userid instead
+            const testPost2 = {
+                body: 'test',
+                file: 'https://via.placeholder.com/300',
+                userid: user.id,  // Try lowercase
+                audience_type: 'yourself'
+            };
+            
+            console.log('Trying with lowercase userid:', testPost2);
+            
+            const { data: insertResult2, error: insertError2 } = await supabase
+                .from('posts')
+                .insert([testPost2])
+                .select()
+                .single();
+                
+            console.log('Lowercase test result:', { data: insertResult2, error: insertError2 });
+        }
+        
+    } catch (error) {
+        console.error('Database test failed:', error);
+    }
+};
+
+// Call this function in your sendPhoto function temporarily:
+// Add this line at the beginning of sendPhoto:
+// await testDatabaseSchema();
     return (
         <ScreenWrapper bg='black'>
             <View style={styles.container}>
@@ -219,10 +370,15 @@ const Home = () => {
 
                             {/* Send button (center) */}
                             <TouchableOpacity 
-                                style={styles.sendButton}
+                                style={[styles.sendButton, isUploading && styles.sendButtonDisabled]}
                                 onPress={sendPhoto}
+                                disabled={isUploading}
                             >
-                                <Ionicons name="send" size={24} color="white" />
+                                {isUploading ? (
+                                    <ActivityIndicator size="small" color="white" />
+                                ) : (
+                                    <Ionicons name="send" size={24} color="white" />
+                                )}
                             </TouchableOpacity>
 
                             {/* Empty space for symmetry */}
@@ -344,6 +500,9 @@ const Home = () => {
                         </View>
                     </>
                 )}
+
+                {/* Upload overlay */}
+                <UploadOverlay isVisible={isUploading} message="Uploading photo..." />
             </View>
         </ScreenWrapper>
     );
@@ -505,6 +664,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: 'transparent',
     },
+    sendButtonDisabled: {
+        opacity: 0.6,
+    },
     cancelButton: {
         width: 50,
         height: 50,
@@ -584,6 +746,25 @@ const styles = StyleSheet.create({
     loadingText: {
         color: 'white',
         fontSize: hp(2),
+        textAlign: 'center',
+    },
+    
+    // Upload Overlay
+    uploadingOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.8)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 1000,
+    },
+    uploadingText: {
+        color: 'white',
+        fontSize: hp(2),
+        marginTop: 10,
         textAlign: 'center',
     },
 });
