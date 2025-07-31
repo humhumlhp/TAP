@@ -113,14 +113,52 @@ const Home = () => {
                 const photo = await cameraRef.current.takePictureAsync({
                     quality: 0.8,
                     base64: false,
-                    aspect: [1, 1], // 1:1 aspect ratio
+                    // Remove aspect parameter as it doesn't actually crop
                 });
-                setCapturedImage(photo.uri);
-                console.log('Photo taken:', photo.uri);
+                
+                // Crop the image to 1:1 aspect ratio
+                const croppedUri = await cropImageToSquare(photo.uri, photo.width, photo.height);
+                setCapturedImage(croppedUri);
+                console.log('Photo taken and cropped:', croppedUri);
             } catch (error) {
                 console.error('Error taking picture:', error);
                 Alert.alert('Error', 'Failed to take picture');
             }
+        }
+    };
+
+    // Function to crop image to 1:1 aspect ratio
+    const cropImageToSquare = async (uri, width, height) => {
+        try {
+            // Import ImageManipulator from expo-image-manipulator
+            const { manipulateAsync, SaveFormat } = await import('expo-image-manipulator');
+            
+            // Calculate crop dimensions for 1:1 aspect ratio
+            const size = Math.min(width, height);
+            const originX = (width - size) / 2;
+            const originY = (height - size) / 2;
+            
+            // Crop to square
+            const croppedImage = await manipulateAsync(
+                uri,
+                [
+                    {
+                        crop: {
+                            originX,
+                            originY,
+                            width: size,
+                            height: size,
+                        },
+                    },
+                ],
+                { compress: 0.8, format: SaveFormat.JPEG }
+            );
+            
+            return croppedImage.uri;
+        } catch (error) {
+            console.error('Error cropping image:', error);
+            // If cropping fails, return original
+            return uri;
         }
     };
 
@@ -171,7 +209,6 @@ const Home = () => {
 
     // Send photo with message
     const sendPhoto = async () => {
-        await testDatabaseSchema(); // Add this line temporarily
         if (!capturedImage) {
             Alert.alert('Error', 'No image to upload');
             return;
@@ -241,66 +278,7 @@ const Home = () => {
             </View>
         );
     };
-    // Add this to your Home.jsx temporarily to test database schema
 
-const testDatabaseSchema = async () => {
-    try {
-        console.log('=== DATABASE SCHEMA TEST ===');
-        
-        // Test 1: Check what columns exist in posts table
-        const { data: posts, error: postsError } = await supabase
-            .from('posts')
-            .select('*')
-            .limit(1);
-            
-        console.log('Posts table test:', { data: posts, error: postsError });
-        
-        // Test 2: Try to insert a minimal post to see exact error
-        const testPost = {
-            body: 'test',
-            file: 'https://via.placeholder.com/300',
-            userId: user.id,  // Try camelCase first
-            audience_type: 'yourself'
-        };
-        
-        console.log('Attempting to insert test post:', testPost);
-        
-        const { data: insertResult, error: insertError } = await supabase
-            .from('posts')
-            .insert([testPost])
-            .select()
-            .single();
-            
-        console.log('Insert test result:', { data: insertResult, error: insertError });
-        
-        if (insertError) {
-            // Try with lowercase userid instead
-            const testPost2 = {
-                body: 'test',
-                file: 'https://via.placeholder.com/300',
-                userid: user.id,  // Try lowercase
-                audience_type: 'yourself'
-            };
-            
-            console.log('Trying with lowercase userid:', testPost2);
-            
-            const { data: insertResult2, error: insertError2 } = await supabase
-                .from('posts')
-                .insert([testPost2])
-                .select()
-                .single();
-                
-            console.log('Lowercase test result:', { data: insertResult2, error: insertError2 });
-        }
-        
-    } catch (error) {
-        console.error('Database test failed:', error);
-    }
-};
-
-// Call this function in your sendPhoto function temporarily:
-// Add this line at the beginning of sendPhoto:
-// await testDatabaseSchema();
     return (
         <ScreenWrapper bg='black'>
             <View style={styles.container}>
@@ -540,15 +518,16 @@ const styles = StyleSheet.create({
         padding: 8,
     },
 
-    // Main Camera Area
+    // Main Camera Area - Fixed for proper 1:1 aspect ratio
     mainCameraArea: {
-        aspectRatio: 1,
+        width: wp(90), // 90% of screen width instead of 100%
+        height: wp(90), // Same as width for perfect square
         marginVertical: hp(2),
+        marginHorizontal: wp(5), // Center it with equal margins
         borderRadius: 20,
         overflow: 'hidden',
         borderWidth: 2,
         borderColor: 'rgba(255,255,255,0.3)',
-        width: wp(100), // Full screen width
         alignSelf: 'center',
     },
     cameraContainer: {
@@ -655,9 +634,9 @@ const styles = StyleSheet.create({
         borderBottomColor: 'rgba(255,255,255,0.2)',
     },
     sendButton: {
-        width: 60,
-        height: 60,
-        borderRadius: 30,
+        width: 80,
+        height: 80,
+        borderRadius: 40,
         borderWidth: 2,
         borderColor: 'white',
         justifyContent: 'center',
