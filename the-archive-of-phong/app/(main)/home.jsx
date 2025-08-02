@@ -21,9 +21,10 @@ const Home = () => {
     const router = useRouter();
     const cameraRef = useRef(null);
     
-    // Camera states
-    const [permission, requestPermission] = useCameraPermissions(); //Camera Permission
-    const [facing, setFacing] = useState('back'); //Change camera front/back
+    // Camera states 
+    const [permission, requestPermission] = useCameraPermissions(); //Camera Permission ✅
+
+    const [facing, setFacing] = useState('back'); //Change camera front/back 
     const [flash, setFlash] = useState('off'); //Flash option
     const [capturedImage, setCapturedImage] = useState(null); //Take the picture
     const [targetAudience, setTargetAudience] = useState('yourself'); // yourself, class, school
@@ -83,7 +84,7 @@ const Home = () => {
 
     // Toggle camera facing
     const toggleCameraFacing = () => {
-        setFacing(current => (current === 'back' ? 'front' : 'back'));
+        setFacing(current => (current === 'back' ? 'front' : 'back')); 
     };
 
     // Toggle flash
@@ -113,7 +114,6 @@ const Home = () => {
                 const photo = await cameraRef.current.takePictureAsync({
                     quality: 0.8,
                     base64: false,
-                    // Remove aspect parameter as it doesn't actually crop
                 });
                 
                 // Crop the image to 1:1 aspect ratio
@@ -313,7 +313,7 @@ const Home = () => {
                                     value={messageText}
                                     onChangeText={setMessageText}
                                     multiline={true}
-                                    maxLength={200}
+                                    maxLength={50}
                                 />
                             </View>
                         </View>
@@ -430,12 +430,12 @@ const Home = () => {
                             </TouchableOpacity>
 
                             {/* Gallery/Flip button (right) */}
-                            <TouchableOpacity 
-                                style={styles.sideControlButton}
-                                onPress={toggleCameraFacing}
-                            >
-                                <MaterialIcons name="flip-camera-ios" size={28} color="white" />
-                            </TouchableOpacity>
+                                <TouchableOpacity 
+                                    style={styles.sideControlButton}
+                                    onPress={toggleCameraFacing}
+                                >
+                                    <MaterialIcons name="flip-camera-ios" size={28} color="white" />
+                                </TouchableOpacity>
                         </View>
 
                         {/* Target Audience Selector */}
