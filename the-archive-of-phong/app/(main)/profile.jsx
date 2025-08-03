@@ -1,5 +1,5 @@
 import { Alert, Pressable, StyleSheet, Text, Touchable, TouchableOpacity, View } from 'react-native'
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import ScreenWrapper from '../../components/ScreenWrapper'
 import { useAuth } from '../../contexts/AuthContext'
 import { useRouter } from 'expo-router'
@@ -12,88 +12,104 @@ import { supabase } from '../../lib/supabase'
 import Avatar from '../../components/Avatar'
 
 const Profile = () => {
-    const {user, setAuth} = useAuth();
-    const router = useRouter();
-    const onLogout = async() => {
-        //setAuth(null);
-        const {error} = await supabase.auth.signOut();
-        if (error){
-            Alert.alert('Logout', "Error signing out!")
-        }
+  const [fullUser, setFullUser] = useState(user);
+  const { user, setAuth } = useAuth();
+  const router = useRouter();
+  const onLogout = async () => {
+    //setAuth(null);
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      Alert.alert('Logout', "Error signing out!")
     }
-    const handleLogout = async () =>
-    {
-      Alert.alert('Confirm', "Are you sure you want to logout?", [
-        {
-          text: 'Cancel',
-          onPress: () => console.log('modal cancelled'),
-          style: 'cancel'
-        },
-        {
-          text: 'Logout',
-          onPress: () => onLogout(),
-          style: 'destructive'
-          
-        }
-      ])
-    }
+  }
+  const handleLogout = async () => {
+    Alert.alert('Confirm', "Are you sure you want to logout?", [
+      {
+        text: 'Cancel',
+        onPress: () => console.log('modal cancelled'),
+        style: 'cancel'
+      },
+      {
+        text: 'Logout',
+        onPress: () => onLogout(),
+        style: 'destructive'
 
+      }
+    ])
+  }
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (user?.id) {
+        const { data, error } = await supabase
+          .from('users')
+          .select('school, class')
+          .eq('id', user.id)
+          .single();
+
+        if (data && !error) {
+          setFullUser(data);
+        }
+      }
+    };
+
+    fetchUserData();
+  }, [user?.id]);
   return (
-    <ScreenWrapper bg = 'white'>
-      <UserHeader user = {user} router={router} handleLogout = {handleLogout} />
+    <ScreenWrapper bg='white'>
+      <UserHeader user={user} router={router} handleLogout={handleLogout} />
     </ScreenWrapper>
   )
 }
 
-const UserHeader = ({user, router, handleLogout}) => {
+const UserHeader = ({ user, router, handleLogout }) => {
   return (
-    <View style = {{flex: 1, backgroundColor: 'white', paddingHorizontal: wp(4)}}>
-      <View> 
-        <Header title = 'Profile' mb = {30}/>
-        <TouchableOpacity style = {styles.logoutButton} onPress = {handleLogout}>
-          <Icon name = 'logout' color = {theme.colors.rose} />
+    <View style={{ flex: 1, backgroundColor: 'white', paddingHorizontal: wp(4) }}>
+      <View>
+        <Header title='Profile' mb={30} />
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <Icon name='logout' color={theme.colors.rose} />
         </TouchableOpacity>
       </View>
-      <View style = {styles.container}>
-        <View style = {{gap: 15}}>
-          <View style = {styles.avatarContainer}>
+      <View style={styles.container}>
+        <View style={{ gap: 15 }}>
+          <View style={styles.avatarContainer}>
             <Avatar
-              uri = {user?.image}
-              size = {hp(12)}
-              rounded= {0} //change this back when redraw userDefault pic -> rounded = {theme.radius.xxl*1.4}
-              style = {{borderWidth : 0}} //remove this when the above happened
+              uri={user?.image}
+              size={hp(12)}
+              rounded={0} //change this back when redraw userDefault pic -> rounded = {theme.radius.xxl*1.4}
+              style={{ borderWidth: 0 }} //remove this when the above happened
             />
-            <Pressable style = {styles.editIcon} onPress = {() => router.push('editProfile')}>
-              <Icon name = 'edit' strokeWidth={2.5} size = {20} />
+            <Pressable style={styles.editIcon} onPress={() => router.push('editProfile')}>
+              <Icon name='edit' strokeWidth={2.5} size={20} />
             </Pressable>
           </View>
           {/** username and address */}
-          <View style = {{alignItems: 'center', gap: 4}}>
-            <Text style = {styles.userName}>{user && user.name}</Text>
-            <Text style = {styles.infoText}>Le Hong Phong Highschool for the Gifted</Text>
-            <Text style = {styles.infoText}>Ho Chi Minh City, Viet Nam</Text>
+          <View style={{ alignItems: 'center', gap: 4 }}>
+            <Text style={styles.userName}>{user && user.name}</Text>
+            {console.log(user.school)}
+            <Text style={styles.infoText}>Ho Chi Minh City, Viet Nam</Text>
           </View>
           {/**email, phone, bio */}
-          <View style = {{gap: 10}}>
-            <View style = {styles.info}>
-                {/* <Icon name = 'mail' size = {20} color = {theme.colors.textLight} /> */}
-                {/* <Text style = {styles.infoText}>
+          <View style={{ gap: 10 }}>
+            <View style={styles.info}>
+              {/* <Icon name = 'mail' size = {20} color = {theme.colors.textLight} /> */}
+              {/* <Text style = {styles.infoText}>
                   {user && user.email}
                 </Text> */}
-                {/* <Icon name = 'mail' size = {20} color = {theme.colors.textLight} /> */}
-                {/* <Text style = {styles.infoText}>
+              {/* <Icon name = 'mail' size = {20} color = {theme.colors.textLight} /> */}
+              {/* <Text style = {styles.infoText}>
                   {user && user.phoneNumber}
                 </Text> */}
-                {/* <Icon name = 'mail' size = {20} color = {theme.colors.textLight} /> }
+              {/* <Icon name = 'mail' size = {20} color = {theme.colors.textLight} /> }
                 { <Text style = {styles.infoText}>
                   {user && user.phoneNumber}
                 </Text>  */}
 
-                {
-                  user && user.bio && (
-                    <Text style = {styles.infoText}>{user.bio}</Text>
-                  )
-                }
+              {
+                user && user.bio && (
+                  <Text style={styles.infoText}>{user.bio}</Text>
+                )
+              }
             </View>
 
           </View>
@@ -118,7 +134,7 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.sm,
     backgroundColor: '#fee2e2'
   },
-  avatarContainer:{
+  avatarContainer: {
     height: hp(12),
     width: hp(12),
     alignSelf: 'center'
@@ -131,17 +147,17 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     backgroundColor: 'white',
     shadowColor: theme.colors.textLight,
-    shadowOffset: {width: 0, height: 4},
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
     shadowRadius: 5,
-    elevation: 7, 
+    elevation: 7,
   },
   userName: {
     fontSize: hp(3),
     fontWeight: '500',
     color: theme.color
   },
-  info:{
+  info: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
@@ -149,7 +165,7 @@ const styles = StyleSheet.create({
   infoText: {
     fontSize: hp(1.6),
     fontWeight: '500',
-    color: theme.colors.textLight
+    color: theme.colors.textDark
   }
 
 
