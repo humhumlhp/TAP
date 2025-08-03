@@ -1,4 +1,4 @@
-import { Alert, Pressable, StyleSheet, Text, View, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native'
+import { Alert, Pressable, StyleSheet, Text, View, TouchableOpacity, TextInput, ActivityIndicator, ScrollView, Animated } from 'react-native'
 import React, { useRef, useState, useEffect } from 'react'
 import ScreenWrapper from '../../components/ScreenWrapper'
 import { useAuth } from '../../contexts/AuthContext'
@@ -22,26 +22,65 @@ const Home = () => {
     const cameraRef = useRef(null);
     
     // Camera states 
-    const [permission, requestPermission] = useCameraPermissions(); //Camera Permission ✅
-
-    const [facing, setFacing] = useState('back'); //Change camera front/back 
-    const [flash, setFlash] = useState('off'); //Flash option
-    const [capturedImage, setCapturedImage] = useState(null); //Take the picture
-    const [targetAudience, setTargetAudience] = useState('yourself'); // yourself, class, school
+    const [permission, requestPermission] = useCameraPermissions();
+    const [facing, setFacing] = useState('back');
+    const [flash, setFlash] = useState('off');
+    const [capturedImage, setCapturedImage] = useState(null);
+    const [targetAudience, setTargetAudience] = useState('yourself');
     const [isCameraReady, setIsCameraReady] = useState(false);
     const [isScreenFocused, setIsScreenFocused] = useState(true);
     const [messageText, setMessageText] = useState('');
     const [isUploading, setIsUploading] = useState(false);
 
+    // Feed states
+    const [posts, setPosts] = useState([]);
+    const [showFeed, setShowFeed] = useState(false);
+    const [feedLoading, setFeedLoading] = useState(false);
+
     console.log('user:', user);
 
+    // Load posts when component mounts or audience changes
+    useEffect(() => {
+        loadPosts();
+    }, [targetAudience]);
+
+    // Load posts function - Filter by selected audience
+    const loadPosts = async () => {
+        try {
+            setFeedLoading(true);
+            console.log('Loading posts for user:', user?.id, 'audience:', targetAudience);
+            
+            // Use the selected audience for filtering
+            const audienceFilter = targetAudience === 'yourself' ? 'yourself' : targetAudience;
+            const fetchedPosts = await uploadService.fetchPosts(user?.id, audienceFilter);
+            
+            console.log('Fetched posts:', fetchedPosts);
+            setPosts(fetchedPosts);
+        } catch (error) {
+            console.error('Error loading posts:', error);
+            setPosts([]);
+        } finally {
+            setFeedLoading(false);
+        }
+    };
+
+    // Simple function to show feed
+    const showPostFeed = () => {
+        setShowFeed(true);
+        loadPosts(); // Refresh posts when opening feed
+    };
+
+    // Simple function to hide feed
+    const hidePostFeed = () => {
+        setShowFeed(false);
+    };
+
     // Handle screen focus/unfocus to reinitialize camera
-    useFocusEffect( // ensures the camera only initializes when the screen is focused.
+    useFocusEffect(
         React.useCallback(() => {
             setIsScreenFocused(true);
             setIsCameraReady(false);
             
-            // Small delay to ensure camera reinitializes properly
             const timer = setTimeout(() => {
                 setIsCameraReady(true);
             }, 100);
@@ -116,7 +155,6 @@ const Home = () => {
                     base64: false,
                 });
                 
-                // Crop the image to 1:1 aspect ratio
                 const croppedUri = await cropImageToSquare(photo.uri, photo.width, photo.height);
                 setCapturedImage(croppedUri);
                 console.log('Photo taken and cropped:', croppedUri);
@@ -130,15 +168,12 @@ const Home = () => {
     // Function to crop image to 1:1 aspect ratio
     const cropImageToSquare = async (uri, width, height) => {
         try {
-            // Import ImageManipulator from expo-image-manipulator
             const { manipulateAsync, SaveFormat } = await import('expo-image-manipulator');
             
-            // Calculate crop dimensions for 1:1 aspect ratio
             const size = Math.min(width, height);
             const originX = (width - size) / 2;
             const originY = (height - size) / 2;
             
-            // Crop to square
             const croppedImage = await manipulateAsync(
                 uri,
                 [
@@ -157,7 +192,6 @@ const Home = () => {
             return croppedImage.uri;
         } catch (error) {
             console.error('Error cropping image:', error);
-            // If cropping fails, return original
             return uri;
         }
     };
@@ -165,7 +199,7 @@ const Home = () => {
     // Retake photo
     const retakePhoto = () => {
         setCapturedImage(null);
-        setMessageText(''); // Clear message when retaking
+        setMessageText('');
     };
 
     // Handle target audience change
@@ -180,7 +214,6 @@ const Home = () => {
             return false;
         }
 
-        // Check if user has required school/class data for non-personal posts
         if (targetAudience !== 'yourself') {
             const { data: userData, error } = await supabase
                 .from('users')
@@ -214,7 +247,6 @@ const Home = () => {
             return;
         }
 
-        // Validate user data first
         const isValid = await validateUserData();
         if (!isValid) return;
 
@@ -232,7 +264,6 @@ const Home = () => {
 
             console.log('Upload successful:', result);
 
-            // Show success message with audience info
             const audienceText = targetAudience === 'yourself' 
                 ? 'your personal collection' 
                 : `${result.audienceCount} people in your ${targetAudience}`;
@@ -246,7 +277,8 @@ const Home = () => {
                         onPress: () => {
                             setCapturedImage(null);
                             setMessageText('');
-                            setTargetAudience('yourself'); // Reset to default
+                            setTargetAudience('yourself');
+                            loadPosts(); // Reload posts after successful upload
                         }
                     }
                 ]
@@ -279,6 +311,76 @@ const Home = () => {
         );
     };
 
+    // Feed component
+    const FeedView = () => (
+        <View style={styles.feedContainer}>
+            <View style={styles.feedHeader}>
+                <Text style={styles.feedTitle}>
+                    {targetAudience === 'yourself' ? 'Your Photos' : 
+                     targetAudience === 'class' ? 'Class Photos' : 
+                     targetAudience === 'school' ? 'School Photos' : 'Posts'}
+                </Text>
+                <TouchableOpacity onPress={hidePostFeed}>
+                    <Ionicons name="close" size={24} color="white" />
+                </TouchableOpacity>
+            </View>
+            
+            {feedLoading ? (
+                <View style={styles.feedLoading}>
+                    <ActivityIndicator size="large" color="white" />
+                    <Text style={styles.feedLoadingText}>Loading posts...</Text>
+                </View>
+            ) : posts.length === 0 ? (
+                <View style={styles.feedEmpty}>
+                    <Text style={styles.feedEmptyText}>No posts yet</Text>
+                    <Text style={styles.feedEmptySubtext}>
+                        {targetAudience === 'yourself' 
+                            ? 'Take a photo to start your collection!' 
+                            : `No ${targetAudience} photos available yet.`}
+                    </Text>
+                </View>
+            ) : (
+                <ScrollView style={styles.feedContent}>
+                    {posts.map((post, index) => (
+                        <View key={post.id} style={styles.postItem}>
+                            <View style={styles.postHeader}>
+                                <Text style={styles.postAuthor}>
+                                    {post.users?.name || 'Unknown User'}
+                                </Text>
+                                <Text style={styles.postAudience}>
+                                    {post.audience_type}
+                                </Text>
+                            </View>
+                            
+                            <Image 
+                                source={{ uri: post.file }} 
+                                style={styles.postImage}
+                                contentFit="cover"
+                            />
+                            
+                            {post.body && (
+                                <Text style={styles.postBody}>{post.body}</Text>
+                            )}
+                            
+                            <Text style={styles.postDate}>
+                                {new Date(post.created_at).toLocaleDateString()}
+                            </Text>
+                        </View>
+                    ))}
+                </ScrollView>
+            )}
+        </View>
+    );
+
+    // Show feed if requested
+    if (showFeed) {
+        return (
+            <ScreenWrapper bg='black'>
+                <FeedView />
+            </ScreenWrapper>
+        );
+    }
+
     return (
         <ScreenWrapper bg='black'>
             <View style={styles.container}>
@@ -304,7 +406,6 @@ const Home = () => {
                                 style={styles.imagePreview}
                                 contentFit="cover"
                             />
-                            {/* Message input overlay */}
                             <View style={styles.messageInputContainer}>
                                 <TextInput
                                     style={styles.messageInput}
@@ -334,11 +435,8 @@ const Home = () => {
 
                 {/* Dynamic Controls Based on State */}
                 {capturedImage ? (
-                    // Post-capture controls
                     <>
-                        {/* Send button row */}
                         <View style={styles.sendButtonContainer}>
-                            {/* Cancel button (left) */}
                             <TouchableOpacity 
                                 style={styles.cancelButton}
                                 onPress={retakePhoto}
@@ -346,7 +444,6 @@ const Home = () => {
                                 <Ionicons name="close" size={24} color="white" />
                             </TouchableOpacity>
 
-                            {/* Send button (center) */}
                             <TouchableOpacity 
                                 style={[styles.sendButton, isUploading && styles.sendButtonDisabled]}
                                 onPress={sendPhoto}
@@ -359,11 +456,9 @@ const Home = () => {
                                 )}
                             </TouchableOpacity>
 
-                            {/* Empty space for symmetry */}
                             <View style={styles.emptySpace} />
                         </View>
 
-                        {/* Target Audience Selector */}
                         <View style={styles.audienceSelector}>
                             <TouchableOpacity 
                                 style={[styles.audienceButton, targetAudience === 'school' && styles.activeAudienceButton]}
@@ -396,18 +491,16 @@ const Home = () => {
                             </TouchableOpacity>
                         </View>
 
-                        {/* Swipe Down Indicator */}
                         <View style={styles.swipeIndicator}>
-                            <Text style={styles.swipeText}>Lướt xuống nè</Text>
-                            <Ionicons name="chevron-down" size={16} color="white" />
+                            <TouchableOpacity onPress={showPostFeed} style={styles.feedButton}>
+                                <Text style={styles.swipeText}>Tap to view posts</Text>
+                                <Ionicons name="images-outline" size={16} color="white" />
+                            </TouchableOpacity>
                         </View>
                     </>
                 ) : (
-                    // Camera controls
                     <>
-                        {/* Camera Controls */}
                         <View style={styles.cameraControls}>
-                            {/* Flash button (left) */}
                             <TouchableOpacity 
                                 style={styles.sideControlButton}
                                 onPress={toggleFlash}
@@ -419,7 +512,6 @@ const Home = () => {
                                 />
                             </TouchableOpacity>
 
-                            {/* Capture button (center) */}
                             <TouchableOpacity 
                                 style={styles.captureButton}
                                 onPress={takePicture}
@@ -429,16 +521,14 @@ const Home = () => {
                                 </View>
                             </TouchableOpacity>
 
-                            {/* Gallery/Flip button (right) */}
-                                <TouchableOpacity 
-                                    style={styles.sideControlButton}
-                                    onPress={toggleCameraFacing}
-                                >
-                                    <MaterialIcons name="flip-camera-ios" size={28} color="white" />
-                                </TouchableOpacity>
+                            <TouchableOpacity 
+                                style={styles.sideControlButton}
+                                onPress={toggleCameraFacing}
+                            >
+                                <MaterialIcons name="flip-camera-ios" size={28} color="white" />
+                            </TouchableOpacity>
                         </View>
 
-                        {/* Target Audience Selector */}
                         <View style={styles.audienceSelector}>
                             <TouchableOpacity 
                                 style={[styles.audienceButton, targetAudience === 'school' && styles.activeAudienceButton]}
@@ -471,15 +561,15 @@ const Home = () => {
                             </TouchableOpacity>
                         </View>
 
-                        {/* Swipe Down Indicator */}
                         <View style={styles.swipeIndicator}>
-                            <Text style={styles.swipeText}>Lướt xuống nè</Text>
-                            <Ionicons name="chevron-down" size={16} color="white" />
+                            <TouchableOpacity onPress={showPostFeed} style={styles.feedButton}>
+                                <Text style={styles.swipeText}>Tap to view posts</Text>
+                                <Ionicons name="images-outline" size={16} color="white" />
+                            </TouchableOpacity>
                         </View>
                     </>
                 )}
 
-                {/* Upload overlay */}
                 <UploadOverlay isVisible={isUploading} message="Uploading photo..." />
             </View>
         </ScreenWrapper>
@@ -518,12 +608,12 @@ const styles = StyleSheet.create({
         padding: 8,
     },
 
-    // Main Camera Area - Fixed for proper 1:1 aspect ratio
+    // Main Camera Area
     mainCameraArea: {
-        width: wp(90), // 90% of screen width instead of 100%
-        height: wp(90), // Same as width for perfect square
+        width: wp(90),
+        height: wp(90),
         marginVertical: hp(2),
-        marginHorizontal: wp(5), // Center it with equal margins
+        marginHorizontal: wp(5),
         borderRadius: 20,
         overflow: 'hidden',
         borderWidth: 2,
@@ -611,16 +701,26 @@ const styles = StyleSheet.create({
         color: 'black',
     },
 
-    // Swipe Indicator
+    // Feed Button & Indicator
     swipeIndicator: {
         alignItems: 'center',
         paddingBottom: hp(2),
     },
+    feedButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.3)',
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        gap: 8,
+    },
     swipeText: {
         color: 'white',
         fontSize: hp(1.6),
-        marginBottom: 4,
-        opacity: 0.7,
+        opacity: 0.9,
     },
 
     // Send Button Container
@@ -693,10 +793,6 @@ const styles = StyleSheet.create({
         height: '100%',
         borderRadius: 15,
     },
-    buttonText: {
-        fontSize: hp(1.8),
-        fontWeight: '600',
-    },
 
     // Permission & Loading
     permissionContainer: {
@@ -745,5 +841,96 @@ const styles = StyleSheet.create({
         fontSize: hp(2),
         marginTop: 10,
         textAlign: 'center',
+    },
+
+    // Feed Styles
+    feedContainer: {
+        flex: 1,
+        backgroundColor: 'black',
+        paddingTop: hp(2),
+    },
+    feedHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: wp(6),
+        paddingBottom: hp(2),
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(255,255,255,0.2)',
+    },
+    feedTitle: {
+        color: 'white',
+        fontSize: hp(2.5),
+        fontWeight: 'bold',
+    },
+    feedLoading: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    feedLoadingText: {
+        color: 'white',
+        fontSize: hp(1.8),
+        marginTop: 10,
+    },
+    feedEmpty: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: wp(8),
+    },
+    feedEmptyText: {
+        color: 'white',
+        fontSize: hp(2.2),
+        fontWeight: 'bold',
+        marginBottom: 10,
+    },
+    feedEmptySubtext: {
+        color: 'rgba(255,255,255,0.7)',
+        fontSize: hp(1.6),
+        textAlign: 'center',
+    },
+    feedContent: {
+        flex: 1,
+        paddingHorizontal: wp(4),
+    },
+    postItem: {
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        borderRadius: 15,
+        marginBottom: 15,
+        overflow: 'hidden',
+    },
+    postHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: 15,
+    },
+    postAuthor: {
+        color: 'white',
+        fontSize: hp(1.8),
+        fontWeight: 'bold',
+    },
+    postAudience: {
+        color: 'rgba(255,255,255,0.6)',
+        fontSize: hp(1.4),
+        textTransform: 'capitalize',
+    },
+    postImage: {
+        width: '100%',
+        height: wp(80),
+        backgroundColor: 'rgba(255,255,255,0.1)',
+    },
+    postBody: {
+        color: 'white',
+        fontSize: hp(1.6),
+        padding: 15,
+        paddingTop: 10,
+    },
+    postDate: {
+        color: 'rgba(255,255,255,0.5)',
+        fontSize: hp(1.2),
+        paddingHorizontal: 15,
+        paddingBottom: 15,
     },
 });

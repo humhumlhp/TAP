@@ -56,24 +56,23 @@ class UploadService {
       const postData = {
         body: messageText || '', // Use empty string if no message
         file: imageUrl,
-        userId: userId, // Use camelCase userId to match your schema
-        audience_type: dbAudienceType,
-        created_at: new Date().toISOString()
+        userId: userId, // Use camelCase consistently
+        audience_type: dbAudienceType
       };
 
-      console.log('Post data being inserted:', postData);
+      console.log('Creating post with data:', postData);
 
       const { data: post, error: postError } = await supabase
         .from('posts')
-        .insert([postData])
+        .insert(postData)
         .select()
         .single();
 
       if (postError) {
         console.error('Error creating post:', postError);
-        // If post creation fails, try to delete the uploaded image
+        // Try to cleanup uploaded image if post creation fails
         await this.deleteImage(imageUrl);
-        throw new Error('Failed to create post');
+        throw new Error(`Failed to create post: ${postError.message}`);
       }
 
       console.log('Post created successfully:', post);
@@ -82,48 +81,44 @@ class UploadService {
       const audienceCount = await this.calculateAudienceCount(targetAudience, userData);
 
       return {
-        post,
-        imageUrl,
-        audienceCount,
-        message: 'Post created successfully'
+        success: true,
+        post: post,
+        audienceCount: audienceCount,
+        imageUrl: imageUrl
       };
 
     } catch (error) {
-      console.error('Upload service error:', error);
+      console.error('Upload and create post error:', error);
       throw error;
     }
   }
 
   /**
-   * Upload image file to Supabase Storage (React Native optimized)
+   * Upload image to Supabase Storage
    * @param {string} imageUri - Local image URI
-   * @param {string} userId - User ID for organizing files
+   * @param {string} userId - Current user ID
    * @returns {Promise<string>} - Public URL of uploaded image
    */
   async uploadImage(imageUri, userId) {
     try {
-      // Create a unique filename
+      console.log('Starting image upload...', imageUri);
+
+      // Create unique filename
       const timestamp = Date.now();
-      const randomString = Math.random().toString(36).substring(2, 15);
+      const randomString = Math.random().toString(36).substring(7);
       const fileName = `${userId}/${timestamp}_${randomString}.jpg`;
 
-      console.log('Uploading image with filename:', fileName);
-      console.log('Image URI:', imageUri);
+      console.log('Generated filename:', fileName);
 
-      // React Native specific file upload using FormData
-      const formData = new FormData();
-      
-      // React Native file object for FormData
+      // Create file object for React Native
       const fileObject = {
         uri: imageUri,
         type: 'image/jpeg',
         name: `${timestamp}_${randomString}.jpg`,
       };
       
-      formData.append('file', fileObject);
-      console.log('FormData created with file object:', fileObject);
+      console.log('File object created:', fileObject);
 
-      // For React Native, we need to use the file object directly, not FormData
       // Upload to Supabase Storage
       const { data, error } = await supabase.storage
         .from('posts')
@@ -224,13 +219,15 @@ class UploadService {
   }
 
   /**
-   * Fetch posts based on user's audience criteria
+   * Fetch posts based on user's audience criteria - CORRECTED LOGIC
    * @param {string} userId - Current user ID
    * @param {string} audienceFilter - 'all', 'school', 'class', or 'yourself'
    * @returns {Promise<Array>} - Array of posts with user data
    */
   async fetchPosts(userId, audienceFilter = 'all') {
     try {
+      console.log('Fetching posts with filter:', audienceFilter, 'for user:', userId);
+
       // Get current user data first
       const { data: currentUser, error: userError } = await supabase
         .from('users')
@@ -242,6 +239,13 @@ class UploadService {
         console.error('Error fetching current user:', userError);
         return [];
       }
+
+      if (!currentUser) {
+        console.log('No current user found');
+        return [];
+      }
+
+      console.log('Current user data:', currentUser);
 
       let query = supabase
         .from('posts')
@@ -257,23 +261,28 @@ class UploadService {
         `)
         .order('created_at', { ascending: false });
 
-      // Apply audience filtering
+      // Apply simple audience filtering
       switch (audienceFilter) {
         case 'yourself':
-          query = query.eq('userId', userId); // Use camelCase consistently
+          // Only user's own personal posts
+          query = query
+            .eq('userId', userId)
+            .eq('audience_type', 'personal');
           break;
+
         case 'class':
-          // Show posts from same class or personal posts by user
-          query = query.or(`and(audience_type.eq.class,users.school.eq.${currentUser.school},users.class.eq.${currentUser.class}),and(audience_type.eq.personal,userId.eq.${userId})`);
+          // Only posts with audience_type = 'class' from same class
+          query = query.eq('audience_type', 'class');
           break;
+
         case 'school':
-          // Show posts from same school or personal posts by user
-          query = query.or(`and(audience_type.eq.school,users.school.eq.${currentUser.school}),and(audience_type.eq.class,users.school.eq.${currentUser.school},users.class.eq.${currentUser.class}),and(audience_type.eq.personal,userId.eq.${userId})`);
+          // Only posts with audience_type = 'school' from same school
+          query = query.eq('audience_type', 'school');
           break;
+
         case 'all':
         default:
-          // Show all posts user has access to based on their school/class
-          query = query.or(`and(audience_type.eq.school,users.school.eq.${currentUser.school}),and(audience_type.eq.class,users.school.eq.${currentUser.school},users.class.eq.${currentUser.class}),and(audience_type.eq.personal,userId.eq.${userId})`);
+          // All posts (no filtering)
           break;
       }
 
@@ -284,7 +293,24 @@ class UploadService {
         return [];
       }
 
-      return posts || [];
+      let filteredPosts = posts || [];
+
+      // Apply user-based filtering after the query
+      if (audienceFilter === 'class' && currentUser.school && currentUser.class) {
+        // Filter class posts to only show from same school and class
+        filteredPosts = filteredPosts.filter(post => 
+          post.users?.school === currentUser.school && 
+          post.users?.class === currentUser.class
+        );
+      } else if (audienceFilter === 'school' && currentUser.school) {
+        // Filter school posts to only show from same school
+        filteredPosts = filteredPosts.filter(post => 
+          post.users?.school === currentUser.school
+        );
+      }
+
+      console.log('Fetched posts count:', filteredPosts.length);
+      return filteredPosts;
 
     } catch (error) {
       console.error('Fetch posts error:', error);
