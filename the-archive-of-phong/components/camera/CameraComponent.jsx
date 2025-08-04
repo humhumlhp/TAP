@@ -81,7 +81,7 @@ const CameraComponent = ({
         console.log('Photo taken and cropped:', croppedUri);
       } catch (error) {
         console.error('Error taking picture:', error);
-        Alert.alert('Error', 'Failed to take picture');
+        // Alert.alert('Error', 'Failed to take picture');
       }
     }
   };

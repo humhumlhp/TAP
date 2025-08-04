@@ -6,13 +6,22 @@ const classes = [
   { id: '12A2', label: '12A2' },
   { id: '12A3', label: '12A3' },
   { id: '12A4', label: '12A4' },
-   { id: '12CL1', label: '12CL1' },
+  { id: '12CL1', label: '12CL1' },
   { id: '12CL2', label: '12CL2' },
   { id: '12CT1', label: '12CT1' },
   { id: '12CT2', label: '12CT2' },
   { id: '12CA1', label: '12CA1' },
   { id: '12CA2', label: '12CA2' },
- 
+  { id: '12CS', label: '12CS' },
+  { id: '12CSU', label: '12CSU' },
+  { id: '12CDIA', label: '12CDIA' },
+  { id: '12TH1', label: '12TH1' },
+  { id: '12TH2', label: '12TH2' },
+  { id: '12CV1', label: '12CV1' },
+  { id: '12CV2', label: '12CV2' },
+  { id: '12CH1', label: '12CH1' },
+  { id: '12CH2', label: '12CH2' },
+  { id: '12CTIN', label: '12CTIN' },
   // Add more classes as needed
 ];
 
