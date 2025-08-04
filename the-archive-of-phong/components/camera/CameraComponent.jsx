@@ -7,6 +7,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { hp, wp } from '../../helpers/common';
 import { useFocusEffect } from 'expo-router';
+import { manipulateAsync, SaveFormat } from 'expo-image-manipulator'; 
 
 const CameraComponent = ({ 
   onPhotoTaken, 
@@ -162,7 +163,7 @@ const CameraComponent = ({
             style={styles.cancelButton}
             onPress={onRetakePhoto}
           >
-            <Ionicons name="close" size={24} color="white" />
+            <Ionicons name="close" size={30} color="white" />
           </TouchableOpacity>
 
           <TouchableOpacity 
@@ -173,7 +174,7 @@ const CameraComponent = ({
             {isUploading ? (
               <ActivityIndicator size="small" color="white" />
             ) : (
-              <Ionicons name="send" size={24} color="white" />
+              <Ionicons name="send" size={30} color="white" />
             )}
           </TouchableOpacity>
 
@@ -253,7 +254,7 @@ const styles = StyleSheet.create({
   // Message Input
   messageInputContainer: {
     position: 'absolute',
-    bottom: 20,
+    bottom: 10,
     left: 20,
     right: 20,
     alignItems: 'center'
@@ -300,10 +301,10 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 40,
     borderWidth: 4,
-    borderColor: 'white',
+    borderColor: 'orange',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'transparent',
+    backgroundColor: 'transparent'
   },
   captureButtonInner: {
     width: 60,
@@ -318,9 +319,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: wp(10),
-    paddingVertical: hp(3),
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.2)',
+    paddingVertical: hp(4),
   },
   sendButton: {
     width: 80,

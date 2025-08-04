@@ -6,7 +6,12 @@ const classes = [
   { id: '12A2', label: '12A2' },
   { id: '12A3', label: '12A3' },
   { id: '12A4', label: '12A4' },
-  
+   { id: '12CL1', label: '12CL1' },
+  { id: '12CL2', label: '12CL2' },
+  { id: '12CT1', label: '12CT1' },
+  { id: '12CT2', label: '12CT2' },
+  { id: '12CA1', label: '12CA1' },
+  { id: '12CA2', label: '12CA2' },
  
   // Add more classes as needed
 ];

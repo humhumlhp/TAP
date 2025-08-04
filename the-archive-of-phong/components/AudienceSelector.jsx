@@ -15,6 +15,7 @@ const AudienceSelector = ({
   };
 
   return (
+  <View style = {styles.container}>
     <View style={styles.audienceSelector}>
       <TouchableOpacity 
         style={[
@@ -76,6 +77,7 @@ const AudienceSelector = ({
         </Text>
       </TouchableOpacity>
     </View>
+  </View>
   );
 };
 
@@ -87,8 +89,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: hp(4),
+    alignSelf: 'center',
+    paddingVertical: hp(1),
+    paddingHorizontal: wp(2),
+    borderRadius: 50,
     gap: 8,
+    backgroundColor: '#272727ff',
+    marginVertical: hp(1)
   },
   audienceButton: {
     paddingHorizontal: 12,

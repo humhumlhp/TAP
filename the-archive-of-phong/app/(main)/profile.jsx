@@ -42,7 +42,7 @@ const Profile = () => {
       if (user?.id) {
         const { data, error } = await supabase
           .from('users')
-          .select('school, class')
+          .select('name, school, class')
           .eq('id', user.id)
           .single();
 
@@ -56,7 +56,7 @@ const Profile = () => {
   }, [user?.id]);
   return (
     <ScreenWrapper bg='white'>
-      <UserHeader user={user} router={router} handleLogout={handleLogout} />
+      <UserHeader user={fullUser} router={router} handleLogout={handleLogout} />
     </ScreenWrapper>
   )
 }
@@ -86,8 +86,8 @@ const UserHeader = ({ user, router, handleLogout }) => {
           {/** username and address */}
           <View style={{ alignItems: 'center', gap: 4 }}>
             <Text style={styles.userName}>{user && user.name}</Text>
-            {console.log(user.school)}
-            <Text style={styles.infoText}>Ho Chi Minh City, Viet Nam</Text>
+            <Text style={styles.infoText}>{user && user.class}</Text>
+            <Text style={styles.infoText}>{user && user.school}</Text>
           </View>
           {/**email, phone, bio */}
           <View style={{ gap: 10 }}>
@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: hp(3),
     fontWeight: '500',
-    color: theme.color
+    color: 'black'
   },
   info: {
     flexDirection: 'row',

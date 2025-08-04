@@ -1,27 +1,33 @@
-// components/feeds/FeedComponent.jsx
-import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  StyleSheet, 
-  TouchableOpacity, 
-  Text, 
-  ScrollView, 
-  ActivityIndicator 
+// components/feeds/FeedComponent.jsx - Simple Camera-like Layout
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  Text,
+  ActivityIndicator,
+  Dimensions,
+  FlatList
 } from 'react-native';
 import { Image } from 'expo-image';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { hp, wp } from '../../helpers/common';
 import ScreenWrapper from '../ScreenWrapper';
 import { uploadService } from '../../services/uploadService';
+import TopHeader from '../TopHeader';
 
-const FeedComponent = ({ 
-  targetAudience, 
-  user, 
-  showFeed, 
-  onCloseFeed 
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+const FeedComponent = ({
+  targetAudience,
+  user,
+  showFeed,
+  onCloseFeed
 }) => {
   const [posts, setPosts] = useState([]);
   const [feedLoading, setFeedLoading] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const flatListRef = useRef(null);
 
   // Load posts when component mounts or audience changes
   useEffect(() => {
@@ -35,11 +41,11 @@ const FeedComponent = ({
     try {
       setFeedLoading(true);
       console.log('Loading posts for user:', user?.id, 'audience:', targetAudience);
-      
+
       // Use the selected audience for filtering
       const audienceFilter = targetAudience === 'yourself' ? 'yourself' : targetAudience;
       const fetchedPosts = await uploadService.fetchPosts(user?.id, audienceFilter);
-      
+
       console.log('Fetched posts:', fetchedPosts);
       setPosts(fetchedPosts);
     } catch (error) {
@@ -49,6 +55,69 @@ const FeedComponent = ({
       setFeedLoading(false);
     }
   };
+
+  // Handle scroll to track current post
+  const handleScroll = (event) => {
+    const scrollPosition = event.nativeEvent.contentOffset.y;
+    const index = Math.round(scrollPosition / SCREEN_HEIGHT);
+    setCurrentIndex(index);
+  };
+
+  // Render individual post (simple camera-like layout)
+  const renderPost = ({ item: post, index }) => (
+    <View style={styles.container}>
+      {/* Close button - Top right (like camera) */}
+      <TouchableOpacity style={styles.closeButton} onPress={onCloseFeed}>
+        <Ionicons name="close" size={40} color="white" />
+      </TouchableOpacity>
+
+      {/* Main Image Area - Same size and position as camera */}
+      <View style={styles.mainImageArea}>
+        <Image
+          source={{ uri: post.file }}
+          style={styles.postImage}
+          contentFit="cover"
+        />
+
+        {/* Post message overlay (like camera message input) */}
+        {post.body && (
+          <View style={styles.messageOverlay}>
+            <Text style={styles.messageText}>{post.body}</Text>
+          </View>
+        )}
+      </View>
+
+      {/* Bottom info - Same position as camera controls */}
+      <View style={styles.bottomInfo}>
+        <View style={styles.userInfo}>
+          <View style={styles.avatarContainer}>
+            <Ionicons name="person" size={20} color="white" />
+          </View>
+          <View style={styles.userDetails}>
+            <Text style={styles.username}>
+              {post.users?.name || 'Unknown User'}
+            </Text>
+            <Text style={styles.userClass}>
+              {post.users?.class || '12TAP'}
+            </Text>
+          </View>
+        </View>
+
+        <Text style={styles.postDate}>
+          {new Date(post.created_at).toLocaleDateString('vi-VN')}
+        </Text>
+      </View>
+
+      {/* Post indicator - Bottom center */}
+      {posts.length > 1 && (
+        <View style={styles.indicatorContainer}>
+          <Text style={styles.indicatorText}>
+            {index + 1} / {posts.length}
+          </Text>
+        </View>
+      )}
+    </View>
+  );
 
   // Function to get feed title based on audience
   const getFeedTitle = () => {
@@ -60,84 +129,64 @@ const FeedComponent = ({
     }
   };
 
-  // Function to get empty state message
-  const getEmptyMessage = () => {
-    if (targetAudience === 'yourself') {
-      return 'Take a photo to start your collection!';
-    }
-    return `No ${targetAudience} photos available yet.`;
-  };
-
   // If feed is not showing, don't render anything
   if (!showFeed) {
     return null;
   }
 
-  return (
-    <ScreenWrapper bg='black'>
-      <View style={styles.feedContainer}>
-        {/* Feed Header */}
-        <View style={styles.feedHeader}>
-          <Text style={styles.feedTitle}>
-            {getFeedTitle()}
-          </Text>
-          <TouchableOpacity onPress={onCloseFeed}>
-            <Ionicons name="close" size={24} color="white" />
-          </TouchableOpacity>
+  // Loading state
+  if (feedLoading) {
+    return (
+      <ScreenWrapper bg='black'>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="white" />
+          <Text style={styles.loadingText}>Loading {getFeedTitle().toLowerCase()}...</Text>
         </View>
-        
-        {/* Feed Content */}
-        {feedLoading ? (
-          <View style={styles.feedLoading}>
-            <ActivityIndicator size="large" color="white" />
-            <Text style={styles.feedLoadingText}>Loading posts...</Text>
-          </View>
-        ) : posts.length === 0 ? (
-          <View style={styles.feedEmpty}>
-            <Text style={styles.feedEmptyText}>No posts yet</Text>
-            <Text style={styles.feedEmptySubtext}>
-              {getEmptyMessage()}
+      </ScreenWrapper>
+    );
+  }
+
+  // Empty state
+  if (posts.length === 0) {
+    return (
+      <ScreenWrapper bg='black'>
+        <View style={styles.container}>
+          <TouchableOpacity style={styles.closeButton} onPress={onCloseFeed}>
+            <Ionicons name="close" size={40} color="white" />
+          </TouchableOpacity>
+
+          <View style={styles.emptyContainer}>
+            <Ionicons name="images-outline" size={80} color="rgba(255,255,255,0.3)" />
+            <Text style={styles.emptyTitle}>No posts yet</Text>
+            <Text style={styles.emptySubtext}>
+              {targetAudience === 'yourself'
+                ? 'Take a photo to start your collection!'
+                : `No ${targetAudience} photos available yet.`}
             </Text>
           </View>
-        ) : (
-          <ScrollView style={styles.feedContent}>
-            {posts.map((post, index) => (
-              <PostItem key={post.id} post={post} />
-            ))}
-          </ScrollView>
-        )}
-      </View>
-    </ScreenWrapper>
-  );
-};
+        </View>
+      </ScreenWrapper>
+    );
+  }
 
-// Individual Post Item Component
-const PostItem = ({ post }) => {
+  // Main feed with posts
   return (
-    <View style={styles.postItem}>
-      <View style={styles.postHeader}>
-        <Text style={styles.postAuthor}>
-          {post.users?.name || 'Unknown User'}
-        </Text>
-        <Text style={styles.postAudience}>
-          {post.audience_type}
-        </Text>
-      </View>
-      
-      <Image 
-        source={{ uri: post.file }} 
-        style={styles.postImage}
-        contentFit="cover"
+    <ScreenWrapper bg='black'>
+      <TopHeader />
+      <FlatList
+        ref={flatListRef}
+        data={posts}
+        renderItem={renderPost}
+        keyExtractor={(item) => item.id.toString()}
+        pagingEnabled={true}
+        showsVerticalScrollIndicator={false}
+        snapToInterval={SCREEN_HEIGHT}
+        decelerationRate="fast"
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        style={styles.flatList}
       />
-      
-      {post.body && (
-        <Text style={styles.postBody}>{post.body}</Text>
-      )}
-      
-      <Text style={styles.postDate}>
-        {new Date(post.created_at).toLocaleDateString()}
-      </Text>
-    </View>
+    </ScreenWrapper>
   );
 };
 
@@ -146,7 +195,7 @@ export const FeedButton = ({ onShowFeed }) => {
   return (
     <View style={styles.swipeIndicator}>
       <TouchableOpacity onPress={onShowFeed} style={styles.feedButton}>
-        <Text style={styles.swipeText}>Tap to view posts</Text>
+        <Text style={styles.swipeText}>Chạm để xem Tap của người khác</Text>
         <Ionicons name="images-outline" size={16} color="white" />
       </TouchableOpacity>
     </View>
@@ -156,103 +205,176 @@ export const FeedButton = ({ onShowFeed }) => {
 export default FeedComponent;
 
 const styles = StyleSheet.create({
-  // Feed Styles
-  feedContainer: {
-    flex: 1,
+  // Main container - Same as camera
+  container: {
+    width: SCREEN_WIDTH,
+    height: SCREEN_HEIGHT,
     backgroundColor: 'black',
-    paddingTop: hp(2),
-  },
-  feedHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: wp(6),
-    paddingBottom: hp(2),
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.2)',
-  },
-  feedTitle: {
-    color: 'white',
-    fontSize: hp(2.5),
-    fontWeight: 'bold',
-  },
-  feedLoading: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  feedLoadingText: {
-    color: 'white',
-    fontSize: hp(1.8),
-    marginTop: 10,
-  },
-  feedEmpty: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: wp(8),
-  },
-  feedEmptyText: {
-    color: 'white',
-    fontSize: hp(2.2),
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  feedEmptySubtext: {
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: hp(1.6),
-    textAlign: 'center',
-  },
-  feedContent: {
-    flex: 1,
-    paddingHorizontal: wp(4),
-  },
-  
-  // Post Item Styles
-  postItem: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 15,
-    marginBottom: 15,
-    overflow: 'hidden',
-  },
-  postHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 15,
-  },
-  postAuthor: {
-    color: 'white',
-    fontSize: hp(1.8),
-    fontWeight: 'bold',
-  },
-  postAudience: {
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: hp(1.4),
-    textTransform: 'capitalize',
-  },
-  postImage: {
-    width: '100%',
-    height: wp(80),
-    backgroundColor: 'rgba(255,255,255,0.1)',
-  },
-  postBody: {
-    color: 'white',
-    fontSize: hp(1.6),
-    padding: 15,
-    paddingTop: 10,
-  },
-  postDate: {
-    color: 'rgba(255,255,255,0.5)',
-    fontSize: hp(1.2),
-    paddingHorizontal: 15,
-    paddingBottom: 15,
   },
 
-  // Feed Button & Indicator
-  swipeIndicator: {
+  flatList: {
+    flex: 1,
+  },
+
+  // Close button - Top right (same position as camera)
+  closeButton: {
+    position: 'absolute',
+    top: hp(65),
+    width: 80,
+    height: 80,
+    borderRadius: 50,
+    backgroundColor: 'rgba(255, 0, 0, 0.5)',
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingBottom: hp(7),
+    alignSelf: 'center',
+  },
+
+  // Main Image Area - Same as camera view
+  mainImageArea: {
+    width: '100%',
+    aspectRatio: 1,
+    marginVertical: hp(1),
+    overflow: 'hidden',
+    alignSelf: 'center',
+    position: 'relative',
+    borderRadius: wp(15)
+  },
+
+  // Post Image - Fills the image area
+  postImage: {
+    width: '100%',
+    height: '100%',
+  },
+
+  // Message overlay - Same position as camera message input
+  messageOverlay: {
+    position: 'absolute',
+    bottom: 20,
+    left: 20,
+    right: 20,
+    alignItems: 'center',
+  },
+
+  messageText: {
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    color: 'white',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+    fontSize: hp(1.8),
+    textAlign: 'center',
+  },
+
+  // Bottom info - Same position as camera controls
+  bottomInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: wp(10),
+    paddingVertical: hp(3),
+  },
+
+  // User info section
+  userInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+
+  avatarContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: 'white',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+  },
+
+  userDetails: {
+    gap: 2,
+  },
+
+  username: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+
+  userClass: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 12,
+  },
+
+  // Post date
+  postDate: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 12,
+  },
+
+  // Post indicator - Bottom center
+  indicatorContainer: {
+    position: 'absolute',
+    bottom: hp(1),
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+
+  indicatorText: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 12,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+
+  // Loading state
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'black',
+  },
+
+  loadingText: {
+    color: 'white',
+    fontSize: 16,
+    marginTop: 12,
+  },
+
+  // Empty state
+  emptyContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginVertical: hp(35)
+  },
+
+  emptyTitle: {
+    color: 'white',
+    fontSize: 24,
+    fontWeight: 'bold',
+    // marginTop: 20,
+    // marginBottom: 12,
+    alignSelf: 'center',
+  },
+
+  emptySubtext: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 16,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+
+  // Feed Button & Indicator (for main screen)
+  swipeIndicator: {
+    marginVertical: hp(2),
+    alignItems: 'center',
+    paddingBottom: hp(5),
   },
   feedButton: {
     flexDirection: 'row',
@@ -269,5 +391,6 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: hp(1.6),
     opacity: 0.9,
+    
   },
 });

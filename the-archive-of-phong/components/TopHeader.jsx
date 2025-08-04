@@ -33,6 +33,7 @@ const styles = StyleSheet.create({
         paddingTop: hp(2),
         paddingBottom: hp(1),
         borderBottomColor: 'rgba(255,255,255,0.2)',
+        backgroundColor: 'transparent'
     },
     profileButton: {
         width: 50,
