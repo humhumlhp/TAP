@@ -1,24 +1,40 @@
-import { StyleSheet, Text, View } from 'react-native'
-import React from 'react'
-import ScreenWrapper from '../../components/ScreenWrapper'
-import TopHeader from '../../components/TopHeader'
-import { Camera, useCameraPermissions } from 'expo-camera'
-import CameraView from '../../components/camera/CameraView'
-import CameraControl from '../../components/camera/CameraControl'
-import AudienceSelector from '../../components/AudienceSelector'
-import FeedSwipe from '../../components/feeds/FeedSwipe'
-import { useAuth } from '../../contexts/AuthContext'
-import { hp, wp } from '../../helpers/common'
-import { useRouter } from 'expo-router'
+// app/(main)/home.jsx - REFACTORED VERSION
+import React, { useState, useEffect } from 'react';
+import { 
+  StyleSheet, 
+  View, 
+  TouchableOpacity, 
+  Text, 
+  Alert,
+  ActivityIndicator 
+} from 'react-native';
+import { useCameraPermissions } from 'expo-camera';
+import { useAuth } from '../../contexts/AuthContext';
+import { supabase } from '../../lib/supabase';
+import { hp, wp } from '../../helpers/common';
+import { uploadService } from '../../services/uploadService';
 
+// Import our custom components
+import ScreenWrapper from '../../components/ScreenWrapper';
+import TopHeader from '../../components/TopHeader';
+import CameraComponent from '../../components/camera/CameraComponent';
+import AudienceSelector from '../../components/AudienceSelector';
+import FeedComponent, { FeedButton } from '../../components/feeds/FeedComponent';
 
 const Home = () => {
-
-  const { user, setAuth } = useAuth();
-  console.log('user:', user);
+  const { user } = useAuth();
   const [permission, requestPermission] = useCameraPermissions();
 
-  //Camera permission before using the app
+  // State management - keeping all shared state in the parent component
+  const [capturedImage, setCapturedImage] = useState(null);
+  const [targetAudience, setTargetAudience] = useState('yourself');
+  const [messageText, setMessageText] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
+  const [showFeed, setShowFeed] = useState(false);
+
+  console.log('user:', user);
+
+  // Check camera permissions first
   if (!permission) {
     return (
       <ScreenWrapper bg='black'>
@@ -28,6 +44,7 @@ const Home = () => {
       </ScreenWrapper>
     );
   }
+
   if (!permission.granted) {
     return (
       <ScreenWrapper bg='black'>
@@ -44,36 +61,193 @@ const Home = () => {
       </ScreenWrapper>
     );
   }
-  console.log('permission:', permission) //Check Camera status in Terminal
 
-  const router = useRouter();
+  // ===== CALLBACK FUNCTIONS (Parent functions that children will call) =====
 
+  // Handle when photo is taken (called by CameraComponent)
+  const handlePhotoTaken = (imageUri) => {
+    setCapturedImage(imageUri);
+    console.log('Photo captured:', imageUri);
+  };
+
+  // Handle retaking photo (called by CameraComponent)
+  const handleRetakePhoto = () => {
+    setCapturedImage(null);
+    setMessageText('');
+  };
+
+  // Handle message text change (called by CameraComponent)
+  const handleMessageChange = (text) => {
+    setMessageText(text);
+  };
+
+  // Handle audience change (called by AudienceSelector)
+  const handleAudienceChange = (audience) => {
+    setTargetAudience(audience);
+  };
+
+  // Handle showing feed (called by FeedButton)
+  const handleShowFeed = () => {
+    setShowFeed(true);
+  };
+
+  // Handle closing feed (called by FeedComponent)
+  const handleCloseFeed = () => {
+    setShowFeed(false);
+  };
+
+  // Validate user data before sending photo
+  const validateUserData = async () => {
+    if (!user?.id) {
+      Alert.alert('Error', 'User not authenticated');
+      return false;
+    }
+
+    if (targetAudience !== 'yourself') {
+      const { data: userData, error } = await supabase
+        .from('users')
+        .select('school, class')
+        .eq('id', user.id)
+        .single();
+
+      if (error || !userData) {
+        Alert.alert('Error', 'Unable to fetch user information');
+        return false;
+      }
+
+      if (targetAudience === 'school' && !userData.school) {
+        Alert.alert('Missing Information', 'Please update your school information in profile');
+        return false;
+      }
+
+      if (targetAudience === 'class' && (!userData.school || !userData.class)) {
+        Alert.alert('Missing Information', 'Please update your school and class information in profile');
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  // Handle sending photo (called by CameraComponent)
+  const handlePhotoSent = async () => {
+    if (!capturedImage) {
+      Alert.alert('Error', 'No image to upload');
+      return;
+    }
+
+    const isValid = await validateUserData();
+    if (!isValid) return;
+
+    setIsUploading(true);
+
+    try {
+      console.log('Starting upload process...');
+      
+      const result = await uploadService.uploadAndCreatePost(
+        capturedImage,
+        messageText,
+        targetAudience,
+        user.id
+      );
+
+      console.log('Upload successful:', result);
+
+      const audienceText = targetAudience === 'yourself' 
+        ? 'your personal collection' 
+        : `${result.audienceCount} people in your ${targetAudience}`;
+
+      Alert.alert(
+        'Success!', 
+        `Photo shared with ${audienceText}!`,
+        [
+          { 
+            text: 'OK', 
+            onPress: () => {
+              setCapturedImage(null);
+              setMessageText('');
+              // DON'T reset targetAudience - keep the user's selection
+              // setTargetAudience('yourself'); // ❌ Remove this line
+            }
+          }
+        ]
+      );
+
+    } catch (error) {
+      console.error('Upload failed:', error);
+      
+      Alert.alert(
+        'Upload Failed', 
+        error.message || 'Something went wrong. Please try again.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // ===== RENDER MAIN COMPONENT =====
+
+  // If feed is showing, render only the feed
+  if (showFeed) {
+    return (
+      <FeedComponent 
+        targetAudience={targetAudience}
+        user={user}
+        showFeed={showFeed}
+        onCloseFeed={handleCloseFeed}
+      />
+    );
+  }
+
+  // Main app interface
   return (
-
     <ScreenWrapper bg='black'>
       <View style={styles.container}>
-        {/* Header: Profile picture on the left, Bell notification on the right */}
+        {/* Upload overlay */}
+        {isUploading && (
+          <View style={styles.uploadingOverlay}>
+            <ActivityIndicator size="large" color="white" />
+            <Text style={styles.uploadingText}>Uploading photo...</Text>
+          </View>
+        )}
+
+        {/* 1. Top Header Component */}
         <TopHeader />
-        {/* Access Camera & 1:1 aspect ratio camera overlay*/}
-        <CameraView />
-        {/*Flash, Take Picture, Flip Camera */}
-        <CameraControl />
-        {/* Select School, Class, Personal */}
-        <AudienceSelector />
-        {/* Swipe down to go others' posts */}
-        <FeedSwipe />
+
+        {/* 2. Camera Component (handles camera view, controls, and image preview) */}
+        <CameraComponent 
+          onPhotoTaken={handlePhotoTaken}
+          onPhotoSent={handlePhotoSent}
+          capturedImage={capturedImage}
+          onRetakePhoto={handleRetakePhoto}
+          messageText={messageText}
+          onMessageChange={handleMessageChange}
+          isUploading={isUploading}
+        />
+
+        {/* 3. Audience Selector Component */}
+        <AudienceSelector 
+          targetAudience={targetAudience}
+          onAudienceChange={handleAudienceChange}
+        />
+
+        {/* 4. Feed Button Component */}
+        <FeedButton onShowFeed={handleShowFeed} />
       </View>
     </ScreenWrapper>
-  )
-}
+  );
+};
 
-export default Home
+export default Home;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'black',
   },
+  
+  // Permission & Loading Styles
   permissionContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -102,11 +276,23 @@ const styles = StyleSheet.create({
     fontSize: hp(2),
     textAlign: 'center',
   },
-
-
-
-
-
-
-
-})
+  
+  // Upload Overlay
+  uploadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  uploadingText: {
+    color: 'white',
+    fontSize: hp(2),
+    marginTop: 10,
+    textAlign: 'center',
+  },
+});
