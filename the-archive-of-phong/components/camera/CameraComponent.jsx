@@ -121,8 +121,8 @@ const CameraComponent = ({
     <View style={styles.container}>
       {/* Main Camera Area */}
       <View style={styles.mainCameraArea}>
-        {capturedImage ? (
-          <View style={styles.imagePreviewContainer}>
+        {capturedImage ? ( //Check whether there is an captured imaged? if yes then
+          <View style={styles.imagePreviewContainer}> 
             <Image 
               source={{ uri: capturedImage }} 
               style={styles.imagePreview}
@@ -140,7 +140,7 @@ const CameraComponent = ({
               />
             </View>
           </View>
-        ) : (
+        ) : ( //if no then
           <View style={styles.cameraContainer}>
             {isScreenFocused && isCameraReady && (
               <CameraView

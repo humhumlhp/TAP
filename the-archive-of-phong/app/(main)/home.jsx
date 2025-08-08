@@ -202,7 +202,8 @@ const Home = () => {
 
   // Main app interface
   return (
-    <ScreenWrapper bg='black'>
+    // ScreenWrapper make sure the element stay within the screen without dropping out
+    <ScreenWrapper bg='black'>  
       <View style={styles.container}>
         {/* Upload overlay */}
         {isUploading && (
@@ -217,13 +218,13 @@ const Home = () => {
 
         {/* 2. Camera Component (handles camera view, controls, and image preview) */}
         <CameraComponent 
-          onPhotoTaken={handlePhotoTaken}
-          onPhotoSent={handlePhotoSent}
-          capturedImage={capturedImage}
-          onRetakePhoto={handleRetakePhoto}
-          messageText={messageText}
-          onMessageChange={handleMessageChange}
-          isUploading={isUploading}
+          onPhotoTaken={handlePhotoTaken} //Action to take photo
+          onPhotoSent={handlePhotoSent} //Action to send photo
+          capturedImage={capturedImage} //Action to store photo temporary
+          onRetakePhoto={handleRetakePhoto} //Action to cancel and retake photo
+          messageText={messageText} //Action to add message
+          onMessageChange={handleMessageChange} //
+          isUploading={isUploading} //Action to anounce uploading state
         />
 
         {/* 3. Audience Selector Component */}
