@@ -1,13 +1,40 @@
-import { AppState } from 'react-native'
+import { AppState, Platform } from 'react-native'
 import 'react-native-url-polyfill/auto'
-import AsyncStorage from '@react-native-async-storage/async-storage'
 import { createClient, processLock } from '@supabase/supabase-js'
 import { supabaseAnonKey, supabaseUrl } from '../constants'
 
+// Platform-specific storage
+let storage;
+
+if (Platform.OS === 'web') {
+  // Web storage using localStorage
+  storage = {
+    getItem: async (key) => {
+      if (typeof window !== 'undefined') {
+        return localStorage.getItem(key);
+      }
+      return null;
+    },
+    setItem: async (key, value) => {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(key, value);
+      }
+    },
+    removeItem: async (key) => {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(key);
+      }
+    }
+  };
+} else {
+  // Native storage using AsyncStorage
+  const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+  storage = AsyncStorage;
+}
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    storage: AsyncStorage,
+    storage: storage,
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
