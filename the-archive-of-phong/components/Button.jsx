@@ -7,60 +7,74 @@ import Loading from './Loading'
 const Button = ({
     buttonStyle,
     textStyle,
-    title='',
-    onPress=() => {},
+    title = '',
+    onPress = () => { },
     loading = false,
     hasShadow = true,
+    width,
+    height,
+    children,
+    fontSize = wp(5),
+    top,
 }) => {
 
 
-    const shadowStyle ={
-        shadowColor: theme.colors.dark,
-        shadowOffset: {width: 0, height: 10},
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-        elevation: 4
-
-
+    const shadowStyle = {
+        borderWidth: 4,
+        borderColor: '#000',
+        shadowColor: '#000',
+        shadowOffset: { width: 6, height: 6 },
+        shadowOpacity: 1,
+        shadowRadius: 0,
+        elevation: 0,
     }
 
     if (loading) {
         return (
-            <View style = {[styles.button, buttonStyle, {backgroundColor: 'white'}]}>
-                <Loading/>
+            <View style={[styles.button, buttonStyle, { backgroundColor: 'white' }]}>
+                <Loading />
             </View>
-
-
         )
-
-
     }
-  return (
-    <Pressable onPress={onPress} style = {[styles.button, buttonStyle, hasShadow && shadowStyle]}>
-      <Text style = {[styles.text, textStyle]}>{title}</Text>
-    </Pressable>
-  )
+    return (
+        <View style={styles.shadowContainer}>
+            {hasShadow && <View style={styles.shadow} />}
+            <Pressable onPress={onPress} style={[styles.button, buttonStyle, width && {width}, height && {height}]}>
+                {children ||<Text style={[styles.text, {fontSize},top && {top}, textStyle]}>{title}</Text> }
+            </Pressable>
+        </View>
+    )
 }
 
 export default Button
 
 const styles = StyleSheet.create({
-    button:{
-        backgroundColor: theme.colors.primary,
-        height: hp(6),
+    shadowContainer: {
+        position: 'relative',
+        alignSelf: 'center',
+        
+    },
+    shadow: {
+        position: 'absolute',
+        top: 5,
+        left: 4,
+        right: -4,
+        bottom: -5,
+        backgroundColor: 'black'
+    },
+    button: {
+        backgroundColor: theme.colors.orange,
         justifyContent: 'center',
         alignItems: 'center',
         borderCurve: 'continuous',
+        borderColor: 'black',
+        borderWidth: 1,
     },
     text: {
-        fontSize: hp(2.5),
-        color: theme.colors.dark ,
-        fontWeight: theme.fonts.bold,
-
-
-
-
-
+        color: theme.colors.black,
+        fontFamily: "VT323_400Regular",
+        alignItems: 'center',
+        textAlign: 'center',
 
     }
 

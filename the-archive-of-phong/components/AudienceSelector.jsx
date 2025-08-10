@@ -3,6 +3,8 @@ import React from 'react';
 import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { hp, wp } from '../helpers/common';
+import { theme } from '../constants/theme';
+import { VT323_400Regular } from '@expo-google-fonts/vt323';
 
 const AudienceSelector = ({ 
   targetAudience, 
@@ -24,16 +26,11 @@ const AudienceSelector = ({
         ]}
         onPress={() => handleAudienceChange('school')}
       >
-        <Ionicons 
-          name="school-outline" 
-          size={20} 
-          color={targetAudience === 'school' ? 'black' : 'white'} 
-        />
         <Text style={[
           styles.audienceText, 
           targetAudience === 'school' && styles.activeAudienceText
         ]}>
-          Trường
+          SCHOOL
         </Text>
       </TouchableOpacity>
       
@@ -44,16 +41,11 @@ const AudienceSelector = ({
         ]}
         onPress={() => handleAudienceChange('class')}
       >
-        <Ionicons 
-          name="people-outline" 
-          size={20} 
-          color={targetAudience === 'class' ? 'black' : 'white'} 
-        />
         <Text style={[
           styles.audienceText, 
           targetAudience === 'class' && styles.activeAudienceText
         ]}>
-          Lớp
+          CLASS
         </Text>
       </TouchableOpacity>
       
@@ -64,16 +56,11 @@ const AudienceSelector = ({
         ]}
         onPress={() => handleAudienceChange('yourself')}
       >
-        <Ionicons 
-          name="person-outline" 
-          size={20} 
-          color={targetAudience === 'yourself' ? 'black' : 'white'} 
-        />
         <Text style={[
           styles.audienceText, 
           targetAudience === 'yourself' && styles.activeAudienceText
         ]}>
-          Cá nhân
+          PERSONAL
         </Text>
       </TouchableOpacity>
     </View>
@@ -85,40 +72,35 @@ export default AudienceSelector;
 
 const styles = StyleSheet.create({
   // Target Audience Selector
+  container:{
+    width: wp(90),
+    alignSelf: 'center'
+  },
   audienceSelector: {
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignItems: 'center',
     alignSelf: 'center',
-    paddingVertical: hp(1),
-    paddingHorizontal: wp(2),
-    borderRadius: 50,
-    gap: 8,
-    backgroundColor: '#272727ff',
-    marginVertical: hp(1)
+    width: '100%'
   },
   audienceButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingHorizontal: wp(6),
+    paddingVertical: hp(1),
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-    backgroundColor: 'transparent',
-    minWidth: 80,
+    borderColor: 'black',
+    backgroundColor: theme.colors.orange,
     alignItems: 'center',
-    flexDirection: 'row',
-    gap: 6,
   },
   activeAudienceButton: {
-    backgroundColor: 'white',
-    borderColor: 'white',
+    backgroundColor: 'black',
+    borderColor: theme.colors.orange,
   },
   audienceText: {
     color: 'white',
-    fontSize: hp(1.4),
-    fontWeight: '500',
+    fontSize: hp(2.5),
+    fontFamily: 'VT323_400Regular'
   },
   activeAudienceText: {
-    color: 'black',
+    color: theme.colors.orange,
   },
 });

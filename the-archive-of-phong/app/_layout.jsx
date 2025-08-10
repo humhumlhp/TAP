@@ -11,8 +11,6 @@ const _layout = () => {
       <Mainlayout/>
     </AuthProvider>
   )
-
-
 }
 
 const Mainlayout = () => {
@@ -44,7 +42,7 @@ const Mainlayout = () => {
 
   const updateUserData = async (user) => {
     let res = await getUserData(user?.id);
-    if (res.success) setUserData({...res.data, email});
+    if (res.success) setUserData({...res.data, email: user.email});
   }
   return (
     <Stack 

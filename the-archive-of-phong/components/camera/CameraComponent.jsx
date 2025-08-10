@@ -8,6 +8,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { hp, wp } from '../../helpers/common';
 import { useFocusEffect } from 'expo-router';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator'; 
+import Button from '../Button';
 
 const CameraComponent = ({ 
   onPhotoTaken, 
@@ -183,32 +184,36 @@ const CameraComponent = ({
       ) : (
         // Controls when camera is active
         <View style={styles.cameraControls}>
-          <TouchableOpacity 
-            style={styles.sideControlButton}
+          <Button 
+            width={wp(10)}
+            height={wp(10)}
             onPress={toggleFlash}
           >
             <Ionicons 
               name={getFlashIcon()} 
               size={28} 
-              color="white" 
+              color="black" 
             />
-          </TouchableOpacity>
+          </Button>
 
-          <TouchableOpacity 
-            style={styles.captureButton}
+          <Button 
+            width={wp(23)}
+            height={wp(23)}
             onPress={takePicture}
+            title='TAP'
+            fontSize = {wp(15)}
+            top = {-wp(1)}
           >
-            <View style={styles.captureButtonOuter}>
-              <View style={styles.captureButtonInner} />
-            </View>
-          </TouchableOpacity>
+          
+          </Button>
 
-          <TouchableOpacity 
-            style={styles.sideControlButton}
+          <Button 
+            width={wp(10)}
+            height={wp(10)}
             onPress={toggleCameraFacing}
           >
-            <MaterialIcons name="flip-camera-ios" size={28} color="white" />
-          </TouchableOpacity>
+            <MaterialIcons name="flip-camera-ios" size={28} color="black" />
+          </Button>
         </View>
       )}
     </View>
@@ -224,17 +229,18 @@ const styles = StyleSheet.create({
   
   // Main Camera Area - True full width, 1:1 aspect ratio
   mainCameraArea: {
-    width: '100%',
+    width: wp(90),
     aspectRatio: 1, // This ensures 1:1 ratio regardless of width
     marginVertical: hp(1),
-    borderRadius: wp(15), // Remove border radius for true full width look
+    // borderRadius: wp(5), 
     overflow: 'hidden',
-    borderWidth: 0, // Remove border for full width
+    borderWidth: 5, 
     alignSelf: 'center',
   },
   cameraContainer: {
     flex: 1,
     width: '100%',
+    
   },
   camera: {
     flex: 1,

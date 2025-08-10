@@ -15,6 +15,7 @@ import { hp, wp } from '../../helpers/common';
 import ScreenWrapper from '../ScreenWrapper';
 import { uploadService } from '../../services/uploadService';
 import TopHeader from '../TopHeader';
+import Button from '../Button';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -194,10 +195,14 @@ const FeedComponent = ({
 export const FeedButton = ({ onShowFeed }) => {
   return (
     <View style={styles.swipeIndicator}>
-      <TouchableOpacity onPress={onShowFeed} style={styles.feedButton}>
-        <Text style={styles.swipeText}>Chạm để xem Tap của người khác</Text>
-        <Ionicons name="images-outline" size={16} color="white" />
-      </TouchableOpacity>
+      <Button
+       onPress={onShowFeed} 
+       width={wp(90)}
+       height={hp(5)}
+       title = 'TAP TO SHOW OTHER TAP'
+       fontSize={hp(2.8)}
+       >
+      </Button>
     </View>
   );
 };

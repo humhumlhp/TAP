@@ -1,14 +1,14 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import React from 'react'
-import ScreenWrapper from '../../components/ScreenWrapper'
-import Header from '../../components/Header'
+import ScreenWrapper from '../ScreenWrapper'
+import Header from '../Header'
 import { hp, wp } from '../../helpers/common'
 import { theme } from '../../constants/theme'
 import { useAuth } from '../../contexts/AuthContext'
 import { getUserImageSrc } from '../../services/imageService'
 import { Image } from 'expo-image'
 import Icon from '../../assets/icons'
-import Input from '../../components/Input'
+import Input from '../Input'
 
 const EditProfile = () => {
 

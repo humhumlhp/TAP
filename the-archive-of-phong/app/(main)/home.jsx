@@ -20,6 +20,7 @@ import TopHeader from '../../components/TopHeader';
 import CameraComponent from '../../components/camera/CameraComponent';
 import AudienceSelector from '../../components/AudienceSelector';
 import FeedComponent, { FeedButton } from '../../components/feeds/FeedComponent';
+import { theme } from '../../constants/theme';
 
 const Home = () => {
   const { user } = useAuth();
@@ -203,7 +204,7 @@ const Home = () => {
   // Main app interface
   return (
     // ScreenWrapper make sure the element stay within the screen without dropping out
-    <ScreenWrapper bg='black'>  
+    <ScreenWrapper bg={theme.colors.backgroundLight}>  
       <View style={styles.container}>
         {/* Upload overlay */}
         {isUploading && (
@@ -245,7 +246,7 @@ export default Home;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'black',
+    backgroundColor: theme.colors.backgroundLight,
   },
   
   // Permission & Loading Styles
