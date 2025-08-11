@@ -16,7 +16,8 @@ import ScreenWrapper from '../ScreenWrapper';
 import { uploadService } from '../../services/uploadService';
 import TopHeader from '../TopHeader';
 import Button from '../Button';
-
+import { useFonts } from 'expo-font';
+import { VT323_400Regular } from '@expo-google-fonts/vt323'
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const FeedComponent = ({
@@ -30,6 +31,11 @@ const FeedComponent = ({
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef(null);
 
+  // Load fonts FIRST - before any other hooks
+  const [fontsLoaded] = useFonts({
+    VT323_400Regular
+  });
+
   // Load posts when component mounts or audience changes
   useEffect(() => {
     if (showFeed) {
@@ -37,6 +43,14 @@ const FeedComponent = ({
     }
   }, [targetAudience, showFeed]);
 
+  if (!fontsLoaded) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#0000ff" />
+        <Text>Loading fonts...</Text>
+      </View>
+    );
+  }
   // Load posts function - Filter by selected audience
   const loadPosts = async () => {
     try {
@@ -194,14 +208,14 @@ const FeedComponent = ({
 // Feed Button Component (for when feed is not showing)
 export const FeedButton = ({ onShowFeed }) => {
   return (
-    <View style={styles.swipeIndicator}>
+    <View style={styles.feedBtnContainer}>
       <Button
-       onPress={onShowFeed} 
-       width={wp(90)}
-       height={hp(5)}
-       title = 'TAP TO SHOW OTHER TAP'
-       fontSize={hp(2.8)}
-       >
+        onPress={onShowFeed}
+        width={wp(90)}
+        height={hp(5)}
+        title='TAP TO SHOW OTHER TAP'
+        fontSize={hp(2.8)}
+      >
       </Button>
     </View>
   );
@@ -258,6 +272,10 @@ const styles = StyleSheet.create({
     left: 20,
     right: 20,
     alignItems: 'center',
+  },
+  feedBtnContainer: {
+    position: 'relative',
+    top: -hp(5),
   },
 
   messageText: {
@@ -396,6 +414,6 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: hp(1.6),
     opacity: 0.9,
-    
+
   },
 });

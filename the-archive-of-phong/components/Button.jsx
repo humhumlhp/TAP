@@ -1,4 +1,4 @@
-import { View, Text, Pressable, StyleSheet } from 'react-native'
+import { View, Text, Pressable, StyleSheet, TouchableOpacity } from 'react-native'
 import React from 'react'
 import { theme } from '../constants/theme'
 import { hp, wp } from '../helpers/common'
@@ -39,9 +39,9 @@ const Button = ({
     return (
         <View style={styles.shadowContainer}>
             {hasShadow && <View style={styles.shadow} />}
-            <Pressable onPress={onPress} style={[styles.button, buttonStyle, width && {width}, height && {height}]}>
+            <TouchableOpacity onPress={onPress} style={[styles.button, buttonStyle, width && {width}, height && {height}]}>
                 {children ||<Text style={[styles.text, {fontSize},top && {top}, textStyle]}>{title}</Text> }
-            </Pressable>
+            </TouchableOpacity>
         </View>
     )
 }
@@ -72,10 +72,9 @@ const styles = StyleSheet.create({
     },
     text: {
         color: theme.colors.black,
-        fontFamily: "VT323_400Regular",
+        fontFamily: "VT323_400Regular", // String is fine, but ensure font is loaded in parent
         alignItems: 'center',
         textAlign: 'center',
-
     }
 
 

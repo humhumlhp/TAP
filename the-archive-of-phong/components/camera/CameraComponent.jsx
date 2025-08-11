@@ -1,36 +1,45 @@
 // components/camera/CameraComponent.jsx
-import React, { useRef, useState, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, Text, Alert, TextInput, ActivityIndicator } from 'react-native';
+import React, { useRef, useState } from 'react';
+import { View, StyleSheet, TouchableOpacity, Text, TextInput, ActivityIndicator, Animated, InteractionManager } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Image } from 'expo-image';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { hp, wp } from '../../helpers/common';
 import { useFocusEffect } from 'expo-router';
-import { manipulateAsync, SaveFormat } from 'expo-image-manipulator'; 
+import { manipulateAsync, SaveFormat, FlipType } from 'expo-image-manipulator'; 
 import Button from '../Button';
-
-const CameraComponent = ({ 
-  onPhotoTaken, 
-  onPhotoSent, 
-  capturedImage, 
+import { useFonts } from 'expo-font';
+import { VT323_400Regular } from '@expo-google-fonts/vt323'
+import { theme } from '../../constants/theme';
+const CameraComponent = ({
+  onPhotoTaken,
+  onPhotoSent,
+  capturedImage, // legacy (will be ignored in new flow; we use internal state)
   onRetakePhoto,
   messageText,
   onMessageChange,
-  isUploading 
+  isUploading
 }) => {
   const cameraRef = useRef(null);
   const [facing, setFacing] = useState('back');
   const [flash, setFlash] = useState('off');
   const [isCameraReady, setIsCameraReady] = useState(false);
   const [isScreenFocused, setIsScreenFocused] = useState(true);
+  const [capturedImageUri, setCapturedImageUri] = useState(null); // fast preview (raw then processed)
+  const previewOpacity = useRef(new Animated.Value(0)).current;
 
-  // Handle screen focus/unfocus to reinitialize camera
+  const [fontsLoaded] = useFonts({ VT323_400Regular });
+
+  // IMPORTANT: All hooks must run on every render in the same order.
+  // The previous version returned early BEFORE calling useFocusEffect when fonts weren't loaded yet,
+  // causing "Rendered more hooks than during the previous render" once fontsLoaded became true.
+  // We move/use the hook before any conditional return so hook order stays stable.
   useFocusEffect(
     React.useCallback(() => {
       setIsScreenFocused(true);
       setIsCameraReady(false);
-      
+
       const timer = setTimeout(() => {
         setIsCameraReady(true);
       }, 100);
@@ -43,9 +52,18 @@ const CameraComponent = ({
     }, [])
   );
 
+  if (!fontsLoaded) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#0000ff" />
+        <Text>Loading fonts...</Text>
+      </View>
+    );
+  }
+
   // Toggle camera facing (front/back)
   const toggleCameraFacing = () => {
-    setFacing(current => (current === 'back' ? 'front' : 'back')); 
+    setFacing(current => (current === 'back' ? 'front' : 'back'));
   };
 
   // Toggle flash
@@ -68,150 +86,143 @@ const CameraComponent = ({
     }
   };
 
-  // Take picture with 1:1 aspect ratio
-  const takePicture = async () => {
-    if (cameraRef.current) {
-      try {
-        const photo = await cameraRef.current.takePictureAsync({
-          quality: 0.8,
-          base64: false,
-        });
-        
-        const croppedUri = await cropImageToSquare(photo.uri, photo.width, photo.height);
-        onPhotoTaken(croppedUri); // Call parent function with cropped image
-        console.log('Photo taken and cropped:', croppedUri);
-      } catch (error) {
-        console.error('Error taking picture:', error);
-        // Alert.alert('Error', 'Failed to take picture');
-      }
-    }
-  };
-
-  // Function to crop image to 1:1 aspect ratio
   const cropImageToSquare = async (uri, width, height) => {
     try {
-      const { manipulateAsync, SaveFormat } = await import('expo-image-manipulator');
-      
       const size = Math.min(width, height);
       const originX = (width - size) / 2;
       const originY = (height - size) / 2;
-      
-      const croppedImage = await manipulateAsync(
+      const result = await manipulateAsync(
         uri,
-        [
-          {
-            crop: {
-              originX,
-              originY,
-              width: size,
-              height: size,
-            },
-          },
-        ],
-        { compress: 0.8, format: SaveFormat.JPEG }
+        [{ crop: { originX, originY, width: size, height: size } }],
+        { compress: 0.9, format: SaveFormat.JPEG }
       );
-      
-      return croppedImage.uri;
-    } catch (error) {
-      console.error('Error cropping image:', error);
+      return result.uri;
+    } catch (e) {
+      console.warn('Crop failed:', e);
       return uri;
     }
   };
 
+  const takePicture = async () => {
+    if (!cameraRef.current) return;
+    try {
+      const photo = await cameraRef.current.takePictureAsync({
+        quality: 0.85,
+        skipProcessing: true,
+        base64: false,
+      });
+
+      // Instant raw preview - flip front camera immediately for consistency
+      let initialUri = photo.uri;
+      if (facing === 'front') {
+        try {
+          const quickFlipped = await manipulateAsync(
+            photo.uri,
+            [{ flip: FlipType.Horizontal }],
+            { compress: 0.9, format: SaveFormat.JPEG }
+          );
+          initialUri = quickFlipped.uri;
+        } catch (e) {
+          console.warn('Quick flip failed, using original', e);
+        }
+      }
+      setCapturedImageUri(initialUri);
+      previewOpacity.setValue(1); // Instant, no fade animation
+
+      InteractionManager.runAfterInteractions(async () => {
+        // Crop the already-flipped image (for front camera) or raw image (for back camera)
+        const cropped = await cropImageToSquare(initialUri, photo.width, photo.height);
+        setCapturedImageUri(cropped);
+        onPhotoTaken && onPhotoTaken(cropped);
+      });
+    } catch (e) {
+      console.error('Error taking picture:', e);
+    }
+  };
+
+  const handleRetake = () => {
+    previewOpacity.setValue(0);
+    setCapturedImageUri(null);
+    onRetakePhoto && onRetakePhoto();
+  };
+
+  const hasImage = !!capturedImageUri;
+
   return (
     <View style={styles.container}>
-      {/* Main Camera Area */}
       <View style={styles.mainCameraArea}>
-        {capturedImage ? ( //Check whether there is an captured imaged? if yes then
-          <View style={styles.imagePreviewContainer}> 
-            <Image 
-              source={{ uri: capturedImage }} 
-              style={styles.imagePreview}
-              contentFit="cover"
+        <View style={styles.cameraContainer}>
+          {isScreenFocused && isCameraReady && (
+            <CameraView
+              ref={cameraRef}
+              style={[styles.camera, hasImage && { opacity: 0 }]}
+              facing={facing}
+              flash={flash}
+              mode="picture"
             />
-            <View style={styles.messageInputContainer}>
-              <TextInput
-                style={styles.messageInput}
-                placeholder="Nhập nội dung"
-                placeholderTextColor="rgba(255,255,255,0.7)"
-                value={messageText}
-                onChangeText={onMessageChange}
-                multiline={true}
-                maxLength={50}
+          )}
+          {hasImage && (
+            <Animated.View style={[StyleSheet.absoluteFill, { opacity: previewOpacity }]}>
+              <Image 
+                source={{ uri: capturedImageUri }} 
+                style={styles.imagePreview} 
+                contentFit="cover"
+                priority="high"
+                cachePolicy="memory"
               />
-            </View>
-          </View>
-        ) : ( //if no then
-          <View style={styles.cameraContainer}>
-            {isScreenFocused && isCameraReady && (
-              <CameraView
-                ref={cameraRef}
-                style={styles.camera}
-                facing={facing}
-                flash={flash}
-                mode="picture"
-              />
-            )}
-          </View>
-        )}
+              <View style={styles.messageInputContainer}>
+                <TextInput
+                  style={styles.messageInput}
+                  placeholder="Nhập nội dung"
+                  placeholderTextColor="rgba(255,255,255,0.7)"
+                  value={messageText}
+                  onChangeText={onMessageChange}
+                  multiline
+                  maxLength={50}
+                />
+              </View>
+            </Animated.View>
+          )}
+        </View>
       </View>
 
-      {/* Camera Controls */}
-      {capturedImage ? (
-        // Controls when image is captured
+      {hasImage ? (
         <View style={styles.sendButtonContainer}>
-          <TouchableOpacity 
-            style={styles.cancelButton}
-            onPress={onRetakePhoto}
+          <Button
+            width={wp(10)}
+            height={wp(10)}
+            onPress={handleRetake}
           >
-            <Ionicons name="close" size={30} color="white" />
-          </TouchableOpacity>
+            <Ionicons name="close" size={30} color="black" />
+          </Button>
 
-          <TouchableOpacity 
-            style={[styles.sendButton, isUploading && styles.sendButtonDisabled]}
-            onPress={onPhotoSent}
-            disabled={isUploading}
-          >
-            {isUploading ? (
-              <ActivityIndicator size="small" color="white" />
-            ) : (
-              <Ionicons name="send" size={30} color="white" />
-            )}
-          </TouchableOpacity>
-
-          <View style={styles.emptySpace} />
+          <View style={styles.shadowContainer}>
+            <View style={styles.shadow} />
+            <TouchableOpacity
+              style={[styles.sendButton, isUploading && styles.sendButtonDisabled]}
+              onPress={onPhotoSent}
+              disabled={isUploading}
+            >
+              {isUploading ? (
+                <ActivityIndicator size="small" color="white" />
+              ) : (
+                <Ionicons name="send" size={45} color="black" />
+              )}
+            </TouchableOpacity>
+          </View>
+          <Button
+            width={wp(10)}
+            height={wp(10)}>
+            <Ionicons name="download" size={30} color="black" />
+          </Button>
         </View>
       ) : (
-        // Controls when camera is active
         <View style={styles.cameraControls}>
-          <Button 
-            width={wp(10)}
-            height={wp(10)}
-            onPress={toggleFlash}
-          >
-            <Ionicons 
-              name={getFlashIcon()} 
-              size={28} 
-              color="black" 
-            />
+          <Button width={wp(10)} height={wp(10)} onPress={toggleFlash}>
+            <Ionicons name={getFlashIcon()} size={28} color="black" />
           </Button>
-
-          <Button 
-            width={wp(23)}
-            height={wp(23)}
-            onPress={takePicture}
-            title='TAP'
-            fontSize = {wp(15)}
-            top = {-wp(1)}
-          >
-          
-          </Button>
-
-          <Button 
-            width={wp(10)}
-            height={wp(10)}
-            onPress={toggleCameraFacing}
-          >
+          <Button width={wp(23)} height={wp(23)} onPress={takePicture} top={-wp(1)} title='TAP' fontSize={wp(15)} />
+          <Button width={wp(10)} height={wp(10)} onPress={toggleCameraFacing}>
             <MaterialIcons name="flip-camera-ios" size={28} color="black" />
           </Button>
         </View>
@@ -226,21 +237,21 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  
+
   // Main Camera Area - True full width, 1:1 aspect ratio
   mainCameraArea: {
     width: wp(90),
     aspectRatio: 1, // This ensures 1:1 ratio regardless of width
-    marginVertical: hp(1),
+    marginVertical: hp(2),
     // borderRadius: wp(5), 
     overflow: 'hidden',
-    borderWidth: 5, 
+    borderWidth: 5,
     alignSelf: 'center',
   },
   cameraContainer: {
     flex: 1,
     width: '100%',
-    
+
   },
   camera: {
     flex: 1,
@@ -325,17 +336,29 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: wp(10),
-    paddingVertical: hp(4),
+    paddingVertical: hp(4)
+  },
+  shadowContainer: {
+    position: 'relative',
+    alignSelf: 'center',
+
+  },
+  shadow: {
+    position: 'absolute',
+    top: 5,
+    left: 4,
+    right: -4,
+    bottom: -5,
+    backgroundColor: 'black'
   },
   sendButton: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    borderWidth: 2,
-    borderColor: 'white',
+    width: wp(23),
+    height: wp(23),
+    borderWidth: 1,
+    borderColor: 'black',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'transparent',
+    backgroundColor: theme.colors.orange,
   },
   sendButtonDisabled: {
     opacity: 0.6,

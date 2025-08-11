@@ -19,12 +19,15 @@ import ScreenWrapper from '../../components/ScreenWrapper';
 import TopHeader from '../../components/TopHeader';
 import CameraComponent from '../../components/camera/CameraComponent';
 import AudienceSelector from '../../components/AudienceSelector';
-import FeedComponent, { FeedButton } from '../../components/feeds/FeedComponent';
+import FeedComponent, { FeedButton } from '../../components/feeds/FeedComponent (old)';
 import { theme } from '../../constants/theme';
+import Button from '../../components/Button';
+import { useRouter } from 'expo-router'
 
 const Home = () => {
   const { user } = useAuth();
   const [permission, requestPermission] = useCameraPermissions();
+  const router = useRouter();
 
   // State management - keeping all shared state in the parent component
   const [capturedImage, setCapturedImage] = useState(null);
@@ -39,7 +42,7 @@ const Home = () => {
   if (!permission) {
     return (
       <ScreenWrapper bg='black'>
-        <View style={styles.container}>
+        <View style = {styles.permissionContainer}>
           <Text style={styles.loadingText}>Loading camera permissions...</Text>
         </View>
       </ScreenWrapper>
@@ -229,13 +232,16 @@ const Home = () => {
         />
 
         {/* 3. Audience Selector Component */}
+        <View style = {styles.AudienceSelector}>
         <AudienceSelector 
           targetAudience={targetAudience}
           onAudienceChange={handleAudienceChange}
         />
-
+</View>
         {/* 4. Feed Button Component */}
-        <FeedButton onShowFeed={handleShowFeed} />
+        <View style = {styles.FeedButton}>
+        <Button width={wp(90)} height={hp(4)} fontSize = {hp(3)} title='TAP TO SHOW OTHER TAP' onPress={() => router.push('./postView')}/>
+        </View>
       </View>
     </ScreenWrapper>
   );
@@ -278,7 +284,16 @@ const styles = StyleSheet.create({
     fontSize: hp(2),
     textAlign: 'center',
   },
-  
+  AudienceSelector: {
+    position: 'absolute',
+    top: hp(82),
+    alignSelf: 'center'
+  },  
+  FeedButton: {
+    position: 'absolute',
+    alignSelf: 'center',
+    top: hp(84)
+  },
   // Upload Overlay
   uploadingOverlay: {
     position: 'absolute',
