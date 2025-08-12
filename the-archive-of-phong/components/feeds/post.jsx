@@ -37,7 +37,7 @@ const Post = ({ item, index }) => {
           <View style={styles.infoContainer}>
             <View style={styles.userDetails}>
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>name </Text>
+                <Text style={styles.detailLabel}>name</Text>
                 <Text style={styles.detailValue}>: {(item?.users?.name?.trim?.().split(/\s+/).pop()) || 'Unknown'}</Text>
               </View>
               <View style={styles.detailRow}>
@@ -118,15 +118,15 @@ const styles = StyleSheet.create({
   detailRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    marginBottom: hp(0.5),
+    marginBottom: wp(.1),
   },
   detailLabel: {
     fontFamily: "VT323_400Regular",
     fontSize: wp(6),
     color: '#000',
-    width: wp(16),
+    width: wp(15),
     textAlign: 'left',
-    paddingRight: wp(1.5),
+    paddingRight: wp(1),
   },
   detailValue: {
     fontFamily: "VT323_400Regular",
