@@ -16,7 +16,7 @@ import { useAuth } from '../../contexts/AuthContext'
 
 const postView = ({
   targetAudience: propAudience = 'school',
-  user, // Default to mock user
+  user,
 }) => {
   // Prefer audience from navigation params
   const params = useLocalSearchParams();
@@ -25,43 +25,44 @@ const postView = ({
   const [posts, setPosts] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
- 
+
   const [fontsLoaded] = useFonts({
     VT323_400Regular
   });
 
-    // � Load posts from Supabase via service
-    const { user: authUser } = useAuth();
+  // Load posts from Supabase via service
+  const { user: authUser } = useAuth();
 
-    const loadPosts = async () => {
-      try {
-        setLoading(true);
+  const loadPosts = async () => {
+    try {
+      setLoading(true); //set up loading screen when loadpost is called
 
-        // Determine current user id (prefer AuthContext, fallback to prop/mock)
-        const currentUserId = authUser?.id || user?.id;
-        if (!currentUserId) {
-          console.warn('No authenticated user found. Cannot fetch posts.');
-          setPosts([]);
-          return;
-        }
-
-        // Map audience to service filter
-        const validFilters = ['yourself', 'class', 'school'];
-        const audienceFilter = validFilters.includes(targetAudience)
-          ? targetAudience
-          : 'all';
-
-        const fetchedPosts = await uploadService.fetchPosts(currentUserId, audienceFilter);
-        setPosts(Array.isArray(fetchedPosts) ? fetchedPosts : []);
-        console.log(`Loaded ${fetchedPosts?.length || 0} posts for audience: ${targetAudience}`);
-
-      } catch (error) {
-        console.error('Error loading posts from Supabase:', error);
+      // Determine current user id
+      const currentUserId = authUser?.id || user?.id;
+      if (!currentUserId) {
+        console.warn('No authenticated user found. Cannot fetch posts.');
         setPosts([]);
-      } finally {
-        setLoading(false);
+        return;
       }
+
+      // Map audience to service filter
+      const validFilters = ['yourself', 'class', 'school'];
+      const audienceFilter = validFilters.includes(targetAudience)
+        ? targetAudience
+        : 'all';
+
+      const fetchedPosts = await uploadService.fetchPosts(currentUserId, audienceFilter);
+      setPosts(Array.isArray(fetchedPosts) ? fetchedPosts : []);
+
+      console.log(`Loaded ${fetchedPosts?.length || 0} posts for audience: ${targetAudience}`);
+
+    } catch (error) {
+      console.error('Error loading posts from Supabase:', error);
+      setPosts([]);
+    } finally {
+      setLoading(false); //remove loading screen
     }
+  }
 
   // Load posts when component mounts or targetAudience changes
   useEffect(() => {
@@ -75,12 +76,12 @@ const postView = ({
     setRefreshing(false);
   };
 
-  // 🔑 The render function that creates alternating layout
-  const renderPost = ({ item, index }) => {
+  //  The render function that creates alternating layout
+  const renderPost = ({ item, index }) => { //item is the actual data need to be presented, while index is the number that FlatList actually return
     return <Post item={item} index={index} />;
   };
 
-  // 🔑 Key extractor for FlatList performance
+  //  Key extractor for FlatList performance
   const keyExtractor = (item, index) => item.id?.toString() || index.toString();
 
   if (!fontsLoaded) {
@@ -128,39 +129,41 @@ const postView = ({
     <ScreenWrapper bg={theme.colors.backgroundLight}>
       <View style={styles.backButtonContainer}>
         <Button
-          width={wp(10)}
-          height={wp(10)}
+          width={wp(13)}
+          height={wp(13)}
           onPress={() => router.back()}
         >
-          <Ionicons name="arrow-back" size={20} color="black" />
+          <Ionicons name="arrow-back" size={30} color="black" />
         </Button>
       </View>
 
       {/* Debug info - Remove this later */}
-      <View style={styles.debugContainer}>
+      {/* <View style={styles.debugContainer}>
         <Text style={styles.debugText}>
           Showing {posts.length} posts • Audience: {targetAudience}
         </Text>
-      </View>
+      </View> */}
 
-      {/* 🔑 FLATLIST WITH ALTERNATING LAYOUT */}
-      <FlatList
-        data={posts}
-        renderItem={renderPost} // This makes the alternating magic happen
-        keyExtractor={keyExtractor}
-        contentContainerStyle={styles.listContainer}
-        showsVerticalScrollIndicator={false}
-        // Performance optimizations
-        removeClippedSubviews={true}
-        maxToRenderPerBatch={10}
-        updateCellsBatchingPeriod={50}
-        initialNumToRender={5}
-        windowSize={10} // set limit to render the item outside of view box
-       
-        // Pull to refresh
-        refreshing={refreshing}
-        onRefresh={handleRefresh}
-      />
+      {/*  FLATLIST WITH ALTERNATING LAYOUT */}
+      <View style={styles.listContainer}>
+        <FlatList
+          data={posts}
+          renderItem={renderPost} // This makes the alternating magic happen
+          keyExtractor={keyExtractor}
+          showsVerticalScrollIndicator={false}
+          // Performance optimizations
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={10}
+          updateCellsBatchingPeriod={50}
+          initialNumToRender={5}
+          windowSize={10} // set limit to render the item outside of view box
+
+          // Pull to refresh
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          ListFooterComponent={<View style={{ height: hp(10) }} />}
+        />
+      </View>
     </ScreenWrapper>
   )
 }
@@ -175,13 +178,12 @@ const styles = StyleSheet.create({
   },
   backButtonContainer: {
     position: 'absolute',
-    top: hp(5),
+    top: hp(6),
     left: wp(5),
-    zIndex: 10,
   },
   listContainer: {
-    paddingTop: hp(15), // Space for back button + debug info
-    paddingBottom: hp(5),
+  position:'relative',
+  top: hp(8),
   },
   loadingText: {
     fontFamily: "VT323_400Regular",
@@ -200,19 +202,19 @@ const styles = StyleSheet.create({
     color: '#000',
   },
   // Debug container - Remove this later
-  debugContainer: {
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    padding: hp(1),
-    marginTop: hp(8),
-    marginHorizontal: wp(5),
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: '#000',
-  },
-  debugText: {
-    fontFamily: "VT323_400Regular",
-    fontSize: hp(1.8),
-    color: '#000',
-    textAlign: 'center',
-  },
+  // debugContainer: {
+  //   backgroundColor: 'rgba(255,255,255,0.9)',
+  //   padding: hp(1),
+  //   marginTop: hp(8),
+  //   marginHorizontal: wp(5),
+  //   borderRadius: 5,
+  //   borderWidth: 1,
+  //   borderColor: '#000',
+  // },
+  // debugText: {
+  //   fontFamily: "VT323_400Regular",
+  //   fontSize: hp(1.8),
+  //   color: '#000',
+  //   textAlign: 'center',
+  // },
 })

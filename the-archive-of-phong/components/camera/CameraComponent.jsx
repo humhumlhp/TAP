@@ -3,6 +3,7 @@ import React, { useRef, useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, Text, TextInput, ActivityIndicator, Animated, InteractionManager } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Image } from 'expo-image';
+import * as MediaLibrary from 'expo-media-library';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { hp, wp } from '../../helpers/common';
@@ -148,6 +149,33 @@ const CameraComponent = ({
 
   const hasImage = !!capturedImageUri;
 
+  const handleDownload = async () => {
+    if (!capturedImageUri) return;
+    try {
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      if (status !== 'granted') {
+        console.warn('Media library permission not granted');
+        return;
+      }
+  await MediaLibrary.createAssetAsync(capturedImageUri);
+    } catch (e) {
+      console.warn('Save failed:', e?.message || e);
+    }
+  };
+
+  const handleSend = async () => {
+    try {
+      const result = await (onPhotoSent ? onPhotoSent() : Promise.resolve());
+      // If parent didn't explicitly signal failure (return false or throw), reset to camera
+      if (result !== false) {
+        handleRetake();
+      }
+    } catch (e) {
+      // Keep preview on error
+      console.warn('Send failed, keeping preview:', e?.message || e);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.mainCameraArea}>
@@ -200,7 +228,7 @@ const CameraComponent = ({
             <View style={styles.shadow} />
             <TouchableOpacity
               style={[styles.sendButton, isUploading && styles.sendButtonDisabled]}
-              onPress={onPhotoSent}
+              onPress={handleSend}
               disabled={isUploading}
             >
               {isUploading ? (
@@ -212,7 +240,8 @@ const CameraComponent = ({
           </View>
           <Button
             width={wp(10)}
-            height={wp(10)}>
+            height={wp(10)}
+            onPress={handleDownload}>
             <Ionicons name="download" size={30} color="black" />
           </Button>
         </View>

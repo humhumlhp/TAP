@@ -19,7 +19,6 @@ import ScreenWrapper from '../../components/ScreenWrapper';
 import TopHeader from '../../components/TopHeader';
 import CameraComponent from '../../components/camera/CameraComponent';
 import AudienceSelector from '../../components/AudienceSelector';
-import FeedComponent, { FeedButton } from '../../components/feeds/FeedComponent (old)';
 import { theme } from '../../constants/theme';
 import Button from '../../components/Button';
 import { useRouter } from 'expo-router'
@@ -159,25 +158,11 @@ const Home = () => {
 
       console.log('Upload successful:', result);
 
-      const audienceText = targetAudience === 'yourself'
-        ? 'your personal collection'
-        : `${result.audienceCount} people in your ${targetAudience}`;
-
-      Alert.alert(
-        'Success!',
-        `Photo shared with ${audienceText}!`,
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              setCapturedImage(null);
-              setMessageText('');
-              // DON'T reset targetAudience - keep the user's selection
-              // setTargetAudience('yourself'); // ❌ Remove this line
-            }
-          }
-        ]
-      );
+  // Success: silently reset preview and message (no blocking alert)
+  setCapturedImage(null);
+  setMessageText('');
+  // DON'T reset targetAudience - keep the user's selection
+  // setTargetAudience('yourself');
 
     } catch (error) {
       console.error('Upload failed:', error);
@@ -254,6 +239,7 @@ const Home = () => {
                 params: { targetAudience },
               })
             }
+            top={-hp(.3)}
           />
         </View>
       </View>
