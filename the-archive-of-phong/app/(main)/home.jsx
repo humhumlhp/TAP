@@ -1,12 +1,12 @@
 // app/(main)/home.jsx - REFACTORED VERSION
 import React, { useState, useEffect } from 'react';
-import { 
-  StyleSheet, 
-  View, 
-  TouchableOpacity, 
-  Text, 
+import {
+  StyleSheet,
+  View,
+  TouchableOpacity,
+  Text,
   Alert,
-  ActivityIndicator 
+  ActivityIndicator
 } from 'react-native';
 import { useCameraPermissions } from 'expo-camera';
 import { useAuth } from '../../contexts/AuthContext';
@@ -23,6 +23,8 @@ import FeedComponent, { FeedButton } from '../../components/feeds/FeedComponent 
 import { theme } from '../../constants/theme';
 import Button from '../../components/Button';
 import { useRouter } from 'expo-router'
+import { useFonts } from 'expo-font';
+import SchoolDisplay from '../../components/SchoolDisplay';
 
 const Home = () => {
   const { user } = useAuth();
@@ -42,7 +44,7 @@ const Home = () => {
   if (!permission) {
     return (
       <ScreenWrapper bg='black'>
-        <View style = {styles.permissionContainer}>
+        <View style={styles.permissionContainer}>
           <Text style={styles.loadingText}>Loading camera permissions...</Text>
         </View>
       </ScreenWrapper>
@@ -147,7 +149,7 @@ const Home = () => {
 
     try {
       console.log('Starting upload process...');
-      
+
       const result = await uploadService.uploadAndCreatePost(
         capturedImage,
         messageText,
@@ -157,16 +159,16 @@ const Home = () => {
 
       console.log('Upload successful:', result);
 
-      const audienceText = targetAudience === 'yourself' 
-        ? 'your personal collection' 
+      const audienceText = targetAudience === 'yourself'
+        ? 'your personal collection'
         : `${result.audienceCount} people in your ${targetAudience}`;
 
       Alert.alert(
-        'Success!', 
+        'Success!',
         `Photo shared with ${audienceText}!`,
         [
-          { 
-            text: 'OK', 
+          {
+            text: 'OK',
             onPress: () => {
               setCapturedImage(null);
               setMessageText('');
@@ -179,9 +181,9 @@ const Home = () => {
 
     } catch (error) {
       console.error('Upload failed:', error);
-      
+
       Alert.alert(
-        'Upload Failed', 
+        'Upload Failed',
         error.message || 'Something went wrong. Please try again.',
         [{ text: 'OK' }]
       );
@@ -195,7 +197,7 @@ const Home = () => {
   // If feed is showing, render only the feed
   if (showFeed) {
     return (
-      <FeedComponent 
+      <FeedComponent
         targetAudience={targetAudience}
         user={user}
         showFeed={showFeed}
@@ -207,7 +209,7 @@ const Home = () => {
   // Main app interface
   return (
     // ScreenWrapper make sure the element stay within the screen without dropping out
-    <ScreenWrapper bg={theme.colors.backgroundLight}>  
+    <ScreenWrapper bg={theme.colors.backgroundLight}>
       <View style={styles.container}>
         {/* Upload overlay */}
         {isUploading && (
@@ -219,9 +221,10 @@ const Home = () => {
 
         {/* 1. Top Header Component */}
         <TopHeader />
-
+        {/* School info */}
+        {/* <SchoolDisplay /> */}
         {/* 2. Camera Component (handles camera view, controls, and image preview) */}
-        <CameraComponent 
+        <CameraComponent
           onPhotoTaken={handlePhotoTaken} //Action to take photo
           onPhotoSent={handlePhotoSent} //Action to send photo
           capturedImage={capturedImage} //Action to store photo temporary
@@ -232,15 +235,26 @@ const Home = () => {
         />
 
         {/* 3. Audience Selector Component */}
-        <View style = {styles.AudienceSelector}>
-        <AudienceSelector 
-          targetAudience={targetAudience}
-          onAudienceChange={handleAudienceChange}
-        />
-</View>
+        <View style={styles.AudienceSelector}>
+          <AudienceSelector
+            targetAudience={targetAudience}
+            onAudienceChange={handleAudienceChange}
+          />
+        </View>
         {/* 4. Feed Button Component */}
-        <View style = {styles.FeedButton}>
-        <Button width={wp(90)} height={hp(4)} fontSize = {hp(3)} title='TAP TO SHOW OTHER TAP' onPress={() => router.push('./postView')}/>
+        <View style={styles.FeedButton}>
+          <Button
+            width={wp(90)}
+            height={hp(4)}
+            fontSize={hp(3)}
+            title='TAP TO SHOW OTHER TAP'
+            onPress={() =>
+              router.push({
+                pathname: './postView',
+                params: { targetAudience },
+              })
+            }
+          />
         </View>
       </View>
     </ScreenWrapper>
@@ -254,7 +268,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.backgroundLight,
   },
-  
+
   // Permission & Loading Styles
   permissionContainer: {
     flex: 1,
@@ -284,11 +298,15 @@ const styles = StyleSheet.create({
     fontSize: hp(2),
     textAlign: 'center',
   },
+  schoolDisplay: {
+    alignSelf: 'center',
+    fontFamily: 'VT323',
+  },
   AudienceSelector: {
     position: 'absolute',
     top: hp(82),
     alignSelf: 'center'
-  },  
+  },
   FeedButton: {
     position: 'absolute',
     alignSelf: 'center',

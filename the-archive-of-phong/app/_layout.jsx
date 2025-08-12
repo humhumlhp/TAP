@@ -40,7 +40,7 @@ const Mainlayout = () => {
       if (session) {
         setAuth(session?.user);
         updateUserData(session?.user, session.user.email);
-        router.replace('/home');
+        router.replace('/(main)/home'); //fix this back to /home before build the app
 
 
       }
