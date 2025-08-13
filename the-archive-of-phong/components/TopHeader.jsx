@@ -17,14 +17,14 @@ const TopHeader = () => {
                 <Ionicons name = 'person' size = {wp(8)} color = 'black' />
             </Button>
 
-            {/* Notification icon */}
+            {/* Notification icon
             <Button
                 width = {wp(13)}
                 height={wp(13)}
                 onPress={() => router.push('notifications')}
             >
                 <Ionicons name = 'notifications' size = {wp(8)} color = 'black' />
-            </Button>
+            </Button> */}
         </View>
     )
 }

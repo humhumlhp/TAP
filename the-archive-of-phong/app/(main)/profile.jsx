@@ -1,174 +1,232 @@
-import { Alert, Pressable, StyleSheet, Text, Touchable, TouchableOpacity, View } from 'react-native'
-import React, { useEffect, useState } from 'react'
+import { StyleSheet, Text, View, Alert } from 'react-native'
+import React, { useState } from 'react'
 import ScreenWrapper from '../../components/ScreenWrapper'
-import { useAuth } from '../../contexts/AuthContext'
-import { useRouter } from 'expo-router'
-import Header from '../../components/Header'
-import BackButton from '../../components/BackButton'
-import { hp, wp } from '../../helpers/common'
-import Icon from '../../assets/icons'
 import { theme } from '../../constants/theme'
+import { useAuth } from '../../contexts/AuthContext'
+import Button from '../../components/Button'
+import { router } from 'expo-router'
+import Ionicons from '@expo/vector-icons/Ionicons'
+import { hp, wp } from '../../helpers/common'
+import { Image } from 'expo-image'
+import Icon from '../../assets/icons'
+import * as ImagePicker from 'expo-image-picker'
 import { supabase } from '../../lib/supabase'
-import Avatar from '../../components/Avatar'
 
-const Profile = () => {
-  const [fullUser, setFullUser] = useState(user);
-  const { user, setAuth } = useAuth();
-  const router = useRouter();
-  const onLogout = async () => {
-    //setAuth(null);
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      Alert.alert('Logout', "Error signing out!")
+
+
+const profile = () => {
+
+  const { user: authUser, setUserData } = useAuth();
+  const [uploading, setUploading] = useState(false);
+
+  const onUploadAvatar = async () => {
+    try {
+      if (!authUser?.id) return;
+      // Ask permission
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'We need media library permission to select a photo.');
+        return;
+      }
+      // Pick image
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.9,
+      });
+      if (result.canceled || !result.assets?.length) return;
+      const uri = result.assets[0].uri;
+
+      setUploading(true);
+
+      // Upload to Supabase Storage (reuse posts bucket for simplicity)
+      const timestamp = Date.now();
+      const randomString = Math.random().toString(36).substring(7);
+      const path = `${authUser.id}/avatar_${timestamp}_${randomString}.jpg`;
+      const file = { uri, type: 'image/jpeg', name: `avatar_${timestamp}.jpg` };
+
+      const { data, error } = await supabase.storage
+        .from('posts')
+        .upload(path, file, { contentType: 'image/jpeg', upsert: true });
+      if (error) throw error;
+
+      const { data: urlData } = supabase.storage.from('posts').getPublicUrl(path);
+      const publicUrl = urlData.publicUrl;
+
+      // Update user record
+      const { error: updateErr } = await supabase
+        .from('users')
+        .update({ image: publicUrl })
+        .eq('id', authUser.id);
+      if (updateErr) throw updateErr;
+
+      // Update local auth state
+      setUserData({ ...authUser, image: publicUrl });
+    } catch (e) {
+      console.log('Avatar upload error:', e);
+      Alert.alert('Upload failed', e?.message || 'Something went wrong');
+    } finally {
+      setUploading(false);
     }
-  }
+  };
+
+
+
+
+
+
+
+
+
+
+
   const handleLogout = async () => {
-    Alert.alert('Confirm', "Are you sure you want to logout?", [
-      {
-        text: 'Cancel',
-        onPress: () => console.log('modal cancelled'),
-        style: 'cancel'
-      },
-      {
-        text: 'Logout',
-        onPress: () => onLogout(),
-        style: 'destructive'
+    try {
+      await supabase.auth.signOut();
+      setUserData(null);
+      router.replace('signUp'); // adjust route if needed
+    } catch (e) {
+      Alert.alert('Logout failed', e?.message || 'Something went wrong');
+    }
+  };
 
-      }
-    ])
-  }
-  useEffect(() => {
-    const fetchUserData = async () => {
-      if (user?.id) {
-        const { data, error } = await supabase
-          .from('users')
-          .select('name, school, class')
-          .eq('id', user.id)
-          .single();
-
-        if (data && !error) {
-          setFullUser(data);
-        }
-      }
-    };
-
-    fetchUserData();
-  }, [user?.id]);
   return (
-    <ScreenWrapper bg='white'>
-      <UserHeader user={fullUser} router={router} handleLogout={handleLogout} />
+    <ScreenWrapper bg={theme.colors.backgroundLight}>
+      <View style={styles.container}>
+        <View style={styles.backButtonContainer}>
+          <Button
+            width={wp(13)}
+            height={wp(13)}
+            onPress={() => router.back()}
+          >
+            <Ionicons name="arrow-back" size={30} color="black" />
+          </Button>
+        </View>
+
+        <View style={styles.profileContainer}>
+          <View style={styles.avatarContainer}>
+            <View style={styles.shadowLayer} />
+            {authUser?.image ? (
+              <Image
+                source={{ uri: authUser?.image }}
+                style={styles.avatar}
+                contentFit="cover"
+              />
+            ) : (
+              <View style={[styles.avatar, styles.fallbackAvatar]}>
+                <Ionicons name='person-sharp' size={hp(7)} strokeWidth={2} />
+              </View>
+            )}
+          </View>
+
+          {/* Upload avatar button */}
+          <View style={styles.uploadBtnWrapper}>
+            <Button
+              onPress={onUploadAvatar}
+              width={wp(10)}
+              height={wp(10)}
+            >
+              <Ionicons name='create-sharp' size={wp(7)} />
+            </Button>
+          </View>
+        </View>
+
+
+        <View style={styles.userInfoContainer}>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>name:</Text>
+            <Text style={styles.detailValue}>{authUser?.name || ''}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>class:</Text>
+            <Text style={styles.detailValue}>{authUser?.class || ''}</Text>
+          </View>
+           <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>school:</Text>
+            <Text style={styles.detailValue}>{authUser?.school || ''}</Text>
+          </View>
+        </View>
+<View style = {styles.logOutContainer}>
+        <Button onPress={handleLogout} width={wp(90)} height={hp(6)} >
+          <Text style={{ fontFamily: "VT323_400Regular", fontSize: wp(10) }}>LOGOUT</Text>
+        </Button>
+</View>
+      </View>
     </ScreenWrapper>
   )
 }
 
-const UserHeader = ({ user, router, handleLogout }) => {
-  return (
-    <View style={{ flex: 1, backgroundColor: 'white', paddingHorizontal: wp(4) }}>
-      <View>
-        <Header title='Profile' mb={30} />
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Icon name='logout' color={theme.colors.rose} />
-        </TouchableOpacity>
-      </View>
-      <View style={styles.container}>
-        <View style={{ gap: 15 }}>
-          <View style={styles.avatarContainer}>
-            <Avatar
-              uri={user?.image}
-              size={hp(12)}
-              rounded={0} //change this back when redraw userDefault pic -> rounded = {theme.radius.xxl*1.4}
-              style={{ borderWidth: 0 }} //remove this when the above happened
-            />
-            <Pressable style={styles.editIcon} onPress={() => router.push('editProfile')}>
-              <Icon name='edit' strokeWidth={2.5} size={20} />
-            </Pressable>
-          </View>
-          {/** username and address */}
-          <View style={{ alignItems: 'center', gap: 4 }}>
-            <Text style={styles.userName}>{user && user.name}</Text>
-            <Text style={styles.infoText}>{user && user.class}</Text>
-            <Text style={styles.infoText}>{user && user.school}</Text>
-          </View>
-          {/**email, phone, bio */}
-          <View style={{ gap: 10 }}>
-            <View style={styles.info}>
-              {/* <Icon name = 'mail' size = {20} color = {theme.colors.textLight} /> */}
-              {/* <Text style = {styles.infoText}>
-                  {user && user.email}
-                </Text> */}
-              {/* <Icon name = 'mail' size = {20} color = {theme.colors.textLight} /> */}
-              {/* <Text style = {styles.infoText}>
-                  {user && user.phoneNumber}
-                </Text> */}
-              {/* <Icon name = 'mail' size = {20} color = {theme.colors.textLight} /> }
-                { <Text style = {styles.infoText}>
-                  {user && user.phoneNumber}
-                </Text>  */}
-
-              {
-                user && user.bio && (
-                  <Text style={styles.infoText}>{user.bio}</Text>
-                )
-              }
-            </View>
-
-          </View>
-        </View>
-      </View>
-
-
-
-    </View>
-  )
-
-
-}
-
-export default Profile
+export default profile
 
 const styles = StyleSheet.create({
-  logoutButton: {
+  container: {
+    flex: 1
+  },
+  backButtonContainer: {
     position: 'absolute',
-    right: 0,
-    padding: 5,
-    borderRadius: theme.radius.sm,
-    backgroundColor: '#fee2e2'
+    left: wp(5),
   },
   avatarContainer: {
-    height: hp(12),
-    width: hp(12),
-    alignSelf: 'center'
+    position: 'relative',
+    alignSelf: 'center',
+    marginTop: hp(6),
   },
-  editIcon: {
-    position: 'absolute',
-    bottom: 0,
-    right: -12,
-    padding: 7,
-    borderRadius: 50,
-    backgroundColor: 'white',
-    shadowColor: theme.colors.textLight,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 5,
-    elevation: 7,
+  avatar: {
+    height: hp(18),
+    width: hp(18),
+    borderWidth: 1,
   },
-  userName: {
-    fontSize: hp(3),
-    fontWeight: '500',
-    color: 'black'
+  shadowLayer: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'black',
+    transform: [{ translateX: 4 }, { translateY: 5 }],
+    zIndex: 0,
+    borderWidth: 2,
+    borderColor: 'black'
   },
-  info: {
-    flexDirection: 'row',
+  fallbackAvatar: {
     alignItems: 'center',
-    gap: 10,
+    justifyContent: 'center',
+    backgroundColor: theme.colors.backgroundLight,
+    borderWidth: 1,
+    borderColor: theme.colors.black,
   },
-  infoText: {
-    fontSize: hp(1.6),
-    fontWeight: '500',
-    color: theme.colors.textDark
+  uploadBtnWrapper: {
+    marginTop: -hp(3),
+    alignSelf: 'right',
+    position: 'relative',
+    right: -wp(18),
+  },
+  userInfoContainer: {
+    alignSelf: 'center',
+    width: wp(90)
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  detailLabel: {
+    fontFamily: "VT323_400Regular",
+    fontSize: wp(8),
+    color: '#000',
+    width: wp(25),
+    textAlign: 'right',
+  },
+  detailValue: {
+    fontFamily: "VT323_400Regular",
+    fontSize: wp(8),
+    color: '#000',
+    flex: 1,
+    textAlign: 'left',
+    marginLeft: wp(1),
+    width: wp(50)
+  },
+  logOutContainer: {
+    position: 'absolute',
+    top: hp(85),
+    alignSelf: 'center'
   }
-
-
 
 
 

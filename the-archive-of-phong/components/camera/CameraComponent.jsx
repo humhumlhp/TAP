@@ -1,6 +1,6 @@
 // components/camera/CameraComponent.jsx
 import React, { useRef, useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Text, TextInput, ActivityIndicator, Animated, InteractionManager } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Text, TextInput, ActivityIndicator, Animated, InteractionManager, Image as RNImage } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Image } from 'expo-image';
 import * as MediaLibrary from 'expo-media-library';
@@ -29,6 +29,7 @@ const CameraComponent = ({
   const [isScreenFocused, setIsScreenFocused] = useState(true);
   const [capturedImageUri, setCapturedImageUri] = useState(null); // fast preview (raw then processed)
   const previewOpacity = useRef(new Animated.Value(0)).current;
+  const opSeq = useRef(0); // increments to cancel in-flight operations
 
   const [fontsLoaded] = useFonts({ VT323_400Regular });
 
@@ -87,11 +88,20 @@ const CameraComponent = ({
     }
   };
 
-  const cropImageToSquare = async (uri, width, height) => {
+  const cropImageToSquare = async (uri) => {
     try {
+      // Get actual image dimensions from the URI
+      const { width, height } = await new Promise((resolve, reject) => {
+        RNImage.getSize(
+          uri,
+          (w, h) => resolve({ width: w, height: h }),
+          (err) => reject(err)
+        );
+      });
+
       const size = Math.min(width, height);
-      const originX = (width - size) / 2;
-      const originY = (height - size) / 2;
+      const originX = Math.floor((width - size) / 2);
+      const originY = Math.floor((height - size) / 2);
       const result = await manipulateAsync(
         uri,
         [{ crop: { originX, originY, width: size, height: size } }],
@@ -107,34 +117,45 @@ const CameraComponent = ({
   const takePicture = async () => {
     if (!cameraRef.current) return;
     try {
+  const seq = ++opSeq.current; // new operation token
       const photo = await cameraRef.current.takePictureAsync({
         quality: 0.85,
         skipProcessing: true,
         base64: false,
       });
 
-      // Instant raw preview - flip front camera immediately for consistency
-      let initialUri = photo.uri;
-      if (facing === 'front') {
-        try {
-          const quickFlipped = await manipulateAsync(
-            photo.uri,
-            [{ flip: FlipType.Horizontal }],
-            { compress: 0.9, format: SaveFormat.JPEG }
-          );
-          initialUri = quickFlipped.uri;
-        } catch (e) {
-          console.warn('Quick flip failed, using original', e);
-        }
-      }
-      setCapturedImageUri(initialUri);
-      previewOpacity.setValue(1); // Instant, no fade animation
+  // Work with the original captured URI; we'll crop first, then flip for front camera
+  const initialUri = photo.uri;
+  if (seq !== opSeq.current) return; // cancelled
 
       InteractionManager.runAfterInteractions(async () => {
-        // Crop the already-flipped image (for front camera) or raw image (for back camera)
-        const cropped = await cropImageToSquare(initialUri, photo.width, photo.height);
-        setCapturedImageUri(cropped);
-        onPhotoTaken && onPhotoTaken(cropped);
+        try {
+          if (seq !== opSeq.current) return; // cancelled before crop
+          // Crop the original image centered to a square
+          const cropped = await cropImageToSquare(initialUri);
+          if (seq !== opSeq.current) return; // cancelled after crop
+
+          // For front camera, flip the cropped image so preview is correct
+          let processed = cropped;
+          if (facing === 'front') {
+            try {
+              const flipped = await manipulateAsync(
+                cropped,
+                [{ flip: FlipType.Horizontal }],
+                { compress: 0.9, format: SaveFormat.JPEG }
+              );
+              processed = flipped.uri;
+            } catch (e) {
+              console.warn('Flip after crop failed:', e);
+            }
+          }
+
+          setCapturedImageUri(processed);
+          previewOpacity.setValue(1); // show preview now
+          onPhotoTaken && onPhotoTaken(processed);
+        } catch (e) {
+          console.warn('Deferred crop failed:', e);
+        }
       });
     } catch (e) {
       console.error('Error taking picture:', e);
@@ -142,6 +163,7 @@ const CameraComponent = ({
   };
 
   const handleRetake = () => {
+  opSeq.current++; // invalidate any in-flight updates
     previewOpacity.setValue(0);
     setCapturedImageUri(null);
     onRetakePhoto && onRetakePhoto();
@@ -201,8 +223,8 @@ const CameraComponent = ({
               <View style={styles.messageInputContainer}>
                 <TextInput
                   style={styles.messageInput}
-                  placeholder="Nhập nội dung"
-                  placeholderTextColor="rgba(255,255,255,0.7)"
+                  placeholder="Your message"
+                  placeholderTextColor={theme.colors.backgroundLight}
                   value={messageText}
                   onChangeText={onMessageChange}
                   multiline
@@ -307,16 +329,16 @@ const styles = StyleSheet.create({
   },
   messageInput: {
     backgroundColor: 'rgba(0,0,0,0.6)',
-    color: 'white',
+    color: theme.colors.orange,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderRadius: 8,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.3)',
-    fontSize: hp(1.8),
-    minHeight: 44,
+    fontSize: hp(2.5),
+    minHeight: 50,
     maxHeight: 100,
-    textAlign: 'center'
+    textAlign: 'center',
+    fontFamily: 'VT323_400Regular'
   },
 
   // Camera Controls - Add horizontal padding here instead
