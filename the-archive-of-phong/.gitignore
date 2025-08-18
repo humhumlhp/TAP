@@ -1,46 +1,88 @@
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
-# dependencies
+# Dependencies
 node_modules/
 
-# Expo
+# Expo / Metro caches
 .expo/
+.expo-shared/
+.metro-health-check*
+.cache/
+.expo/web/
+.expo/cache/
+
+# Build / output
 dist/
 web-build/
+coverage/
+build/
+android/app/build/
+ios/build/
+ios/DerivedData/
+
+# Generated / tooling
 expo-env.d.ts
+*.tsbuildinfo
+.eslintcache
+babel.config.js.map
 
-/ios
-/android    
+# Platform folders (KEEP if you eject / use prebuild native mods)
+# If you stay pure managed workflow you can ignore them:
+ios/
+android/
 
-# Native
-.kotlin/
-*.orig.*
+# Android / Gradle extras
+android/.gradle/
+android/.idea/
+android/local.properties
+android/captures/
 *.jks
+*.keystore
+
+# iOS / CocoaPods
+ios/Pods/
+*.xcworkspace
+
+# Security / signing
 *.p8
 *.p12
 *.key
-*.mobileprovision
-
-# Metro
-.metro-health-check*
-
-# debug
-npm-debug.*
-yarn-debug.*
-yarn-error.*
-
-# macOS
-.DS_Store
 *.pem
+*.mobileprovision
+*.orig.*
 
-# local env files
-.env*.local
-# Environment variables
+# Env & secrets
 .env
 .env.local
-.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
+# (Keep an example:)
+!.env.example
 
-# typescript
-*.tsbuildinfo
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+expo-error.log
+*.log
 
-app-example
+# OS / editor junk
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# Temporary / misc
+.tmp/
+.sass-cache/
+*.swp
+
+# App sample
+app-example/
+
+# Kotlin cache (rare)
+.kotlin/

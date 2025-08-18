@@ -1,263 +1,287 @@
-import { Alert, StyleSheet, Text, TextInput, View, Pressable, Modal } from 'react-native'
-import React, { useState, useRef } from 'react'
+import { StyleSheet, Text, TextInput, View, Alert } from 'react-native'
+import React, { useRef, useState } from 'react'
 import ScreenWrapper from '../components/ScreenWrapper'
 import { theme } from '../constants/theme'
-import Icon from '../assets/icons'
-import { StatusBar } from 'expo-status-bar'
-import BackButton from '../components/BackButton'
-import { useRouter } from 'expo-router'
 import { hp, wp } from '../helpers/common'
-import Input from '../components/Input'
 import Button from '../components/Button'
+import Ionicons from '@expo/vector-icons/Ionicons'
+import { useRouter } from 'expo-router'
+import { StatusBar } from 'react-native'
+import { VT323_400Regular } from '@expo-google-fonts/vt323'
+import { Image } from 'expo-image'
 import { supabase } from '../lib/supabase'
-import ClassChoiceList from '../components/ClassChoiceList'; // Import your new component
 
-const SignUp = () => {
-    const router = useRouter();
-    const emailRef = useRef("");
-    const nameRef = useRef("");
-    const passwordRef = useRef("");
-    const [loading, setLoading] = useState(false);
-    const [selectedClass, setSelectedClass] = useState(null);
-    const [classModalVisible, setClassModalVisible] = useState(false);
 
-const onSubmit = async ()=>{
-  if (!emailRef.current || !passwordRef.current || !selectedClass) {
-    Alert.alert('SignUp', 'please fill all the fields!');
-    return;
-  }
 
-  let name = nameRef.current.trim();
-  let email = emailRef.current.trim();
-  let password = passwordRef.current.trim();
+const signUp = () => {
 
-  setLoading(true);
 
-  // First, sign up the user
-  const { data: { user, session }, error: signUpError } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        name,
-        // Keep metadata if needed
-      },
-    },
-  });
+  const emailRef = useRef("");
+  const nameRef = useRef("");
+  const passwordRef = useRef("");
+  const [loading, setLoading] = useState(false);
 
-  if (signUpError) {
-    setLoading(false);
-    Alert.alert('Sign up', signUpError.message);
-    return;
-  }
 
-  // Then, update the users table with the class
-  if (user) {
-    const { error: updateError } = await supabase
-      .from('users')
-      .update({ class: selectedClass })
-      .eq('id', user.id);
+// After pressing Sign Up button
+  const onSubmit = async () => {
 
-    if (updateError) {
-      Alert.alert('Update Error', updateError.message);
+
+    // Check weather all field are filled or not
+    
+    if (!emailRef.current || !nameRef.current || !passwordRef.current) {
+      Alert.alert('Sign Up', 'Please fill all the fields!');
+      return;
     }
+
+    let name = nameRef.current.trim();
+    let password = passwordRef.current.trim();
+    let email = emailRef.current.trim();
+
+    if (name.length < 2) {
+      Alert.alert('Invalid name', 'Name must be at least 2 characters long');
+      return;
+    }
+
+    if (password.length < 8) {
+      Alert.alert('Weak password', 'Password must be at least 8 characters long');
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      Alert.alert('Invalid Email', 'Please enter a valid email address');
+      return;
+    }
+
+    setLoading(true);
+
+
+    //The real data process start here:
+    try { 
+      const { data: { user, session }, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name: name,
+          }
+        }
+      });
+
+      if (signUpError) {
+        console.error('Signup error:', signUpError);
+        Alert.alert('Sign Up Failed', signUpError.message);
+        return;
+      }
+
+      if (user) {
+        const  {error : insertError} = await supabase
+        .from('users')
+        .insert({
+          id: user.id,
+          email: email,
+          name: name,
+          email_verified: false,
+          verification_status: 'unverified'
+        });
+         if (insertError) {
+                    console.error('User creation error:', insertError);
+                    // Don't show error to user as auth signup succeeded
+                    // They can still proceed to email verification
+                }
+
+                // Show success message and redirect to email verification
+                Alert.alert(
+                    'Account Created!',
+                    'Please check your email to verify your account before continuing.',
+                    [
+                        {
+                            text: 'OK',
+                            onPress: () => router.replace('/emailVerification')
+                        }
+                    ]
+                );
+
+
+
+
+      }
+
+    } catch (error) {
+      console.error('Unexpected signup error:', error);
+      Alert.alert('Error' , 'Something is wrong, please try again');
+    } finally {
+      setLoading(false)
+    }
+
+
+
+
   }
 
-  setLoading(false);
-}
-    // const onSubmit = async ()=>{
-    //   if (!emailRef.current || !passwordRef.current || !selectedClass) {
-    //     Alert.alert('SignUp', 'please fill all the fields!');
-    //     return;
-    //   }
-    //   // good to go
-    //   let name = nameRef.current.trim();
-    //   let email = emailRef.current.trim();
-    //   let password = passwordRef.current.trim();
+  const router = useRouter();
 
-    //   setLoading(true);
-
-    //   const {data: {session}, error} = await supabase.auth.signUp({
-    //     email,
-    //     password,
-    //     options: {
-    //       data: {
-    //         name,
-    //         class: selectedClass, // Save the class in user metadata
-    //       },
-    //     },
-    //   })
-    //   setLoading(false);
-    //   //console.log('session: ', session);
-    //   //console.log('error: ', error);
-    //   if (error){
-    //     Alert.alert('Sign up', error.message);
-    //   }
-
-    // }
   return (
-    <ScreenWrapper bg={theme.colors.background}>
-      <StatusBar style = 'dark' />
+
+    <ScreenWrapper bg={theme.colors.backgroundLight}>
       <View style={styles.container}>
-        <BackButton router ={router} />
-        {/**welcome Text */}
-        <View>
-            <Text style = {styles.welcomeText}> Phần 1: </Text>
-            <Text style = {styles.welcomeText}> Điền vào chỗ trống</Text>
+        <StatusBar barStyle={'dark-content'} />
+        <View style={styles.backButtonContainer}>
+          <Button
+            width={wp(13)}
+            height={wp(13)}
+            onPress={() => router.back()}
+          >
+            <Ionicons name="arrow-back" size={30} color="black" />
+          </Button>
         </View>
-      
-
-
-
-        {/**form Text */}
-        <View style = {styles.form}>
-          <Text style = {{fontSize: hp(1.5), color: theme.colors.text}}>
-            Xin vui lòng điền đầy đủ thông tin
-          </Text>
-          <Input
-            icon = {<Icon name = "user" size={26} strokeWidth={1.6}/>}
-            placeholder = 'Họ và tên khớp với thẻ học sinh'
-            onChangeText = {value => nameRef.current = value}
-
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>Fill in the blank</Text>
+        </View>
+        <View style={styles.signUpContainer}>
+          <Image
+            source={require('../assets/images/tap-prj.svg')}
+            style={{ width: wp(40), height: wp(40), alignSelf: 'center' }}
+            contentFit='contain'
           />
 
-          <Input
-            icon = {<Icon name = "mail" size={26} strokeWidth={1.6}/>}
-            placeholder = 'Email'
-            onChangeText = {value =>emailRef.current = value}
+          <View style={styles.inputContainer}>
+            <Text style={styles.infoText}>Full name: </Text>
 
-          />
-          <Input
-            icon = {<Icon name = "lock" size={26} strokeWidth={1.6}/>}
-            placeholder = 'Mật khẩu'
-            secureTextEntry
-            onChangeText = {value =>passwordRef.current = value}
-          />
-          {/* Class selection styled like Input */}
-          <Pressable
-            style={styles.inputlist}
-            onPress={() => setClassModalVisible(true)}
-          >
-            <Icon name="users" size={26} strokeWidth={1.6} />
-            <Text style={{ color: theme.colors.text, fontSize: hp(1.5) }}>
-              {selectedClass ? `Lớp: ${selectedClass}` : 'Chọn lớp của bạn'}
-            </Text>
-          </Pressable>
-          {/* Modal for class selection */}
-          <Modal
-            visible={classModalVisible}
-            transparent
-            animationType="slide"
-            onRequestClose={() => setClassModalVisible(false)}
-          >
-            <View style={{
-              flex: 1,
-              backgroundColor: 'rgba(0,0,0,0.3)',
-              justifyContent: 'center',
-              alignItems: 'center'
-            }}>
-              <View style={{
-                backgroundColor: 'white',
-                borderRadius: 12,
-                padding: 20,
-                width: '80%'
-              }}>
-                <Text style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 16 }}>Chọn lớp</Text>
-                <ClassChoiceList
-                  onSelect={cls => {
-                    setSelectedClass(cls);
-                    setClassModalVisible(false);
-                  }}
-                />
-                <Pressable onPress={() => setClassModalVisible(false)} style={{ marginTop: 16 }}>
-                  
-                  <Text style={{ color: theme.colors.primaryDark, textAlign: 'center' }}>Đóng</Text>
-               
-                </Pressable>
-              </View>
-            </View>
-          </Modal>
-          {/**button */}
-          <Button title ={'Đăng kí'} loading = {loading} onPress = {onSubmit} />  
+            <TextInput
+              style={styles.input}
+              autoCapitalize='words'
+              onChangeText={value => nameRef.current = value} //put the "Full name" into nameRef.current
 
-          {/**footer */}
-          <View style = {styles.footer}>
-            <Text style = {styles.footerText}>Đã có tài khoản?</Text>
-            <Pressable onPress={() => router.push('login')}>
-              <Text style = {[styles.footerText, {color: theme.colors.primaryDark, fontWeight: theme.fonts.semibold}]}>Đăng nhập</Text>
-            </Pressable>
+
+
+            />
 
           </View>
+          <View style={styles.inputContainer}>
+            <Text style={styles.infoText}>Email: </Text>
+
+            <TextInput
+              style={styles.input}
+              keyboardType='email-address' 
+              onChangeText={value => emailRef.current = value} //put the email into emailRef.current
+
+            />
+
+          </View>
+          <View style={styles.inputContainer}>
+            <Text style={styles.infoText}>Password: </Text>
+
+            <TextInput
+              style={styles.input}
+
+              autoCapitalize="none"
+              onChangeText={value => passwordRef.current = value} //put the password into passwordRef
 
 
+            />
+
+          </View>
+          <Text style={styles.warningText}> Important: To access your school's feed, your registered name must match your school ID name exactly. If the names don't match, you may not be able to access the feed. </Text>
+        </View>
+
+
+        <View style={styles.buttonContainer}>
+          <Button
+            title='Sign Up'
+            width={wp(90)}
+            height={hp(7)}
+            fontSize={hp(5)}
+            onPress={onSubmit}
+          />
 
         </View>
+        <Text style={styles.termsText}>
+          By creating an account, you agree to our Terms of Service and Privacy Policy. {'\n'}
+          For more infomation, visit thearchiveofphong.com.
+        </Text>
+
+
+
+
 
 
       </View>
-      
-
-
-
-
     </ScreenWrapper>
-
-    
   )
 }
 
-export default SignUp
+export default signUp
 
 const styles = StyleSheet.create({
-  container:{
-    flex: 1,
-    gap: 45,
-    paddingHorizontal: wp(5),
-    
+  container: {
+    flex: 1
   },
-  welcomeText: {
-    fontSize: hp(4),
-    fontWeight: theme.fonts.bold,
-    color: theme.colors.text,
-  },
-  form:{
-    gap:25,
-  },
-  forgotPassword:{
-    textAlign: 'right',
-    fontWeight: theme.fonts.semibold,
-    color: theme.colors.text
-  },
-  footer:{
-    flexDirection:'row',
-    justifyContent: 'center',
+  titleContainer: {
+    position: 'relative',
+    width: wp(90),
+    top: hp(10),
+    alignSelf: 'center',
     alignItems: 'center',
-    gap: 5,
   },
-  footerText:{
+  title: {
+    fontSize: hp(5),
+    fontFamily: 'VT323_400Regular',
     textAlign: 'center',
-    color: theme.colors.text,
-    fontSize: hp(1.6)
+
   },
-  input: {
+
+  backButtonContainer: {
+    position: 'absolute',
+    left: wp(5),
+    top: hp(1)
+  },
+  signUpContainer: {
+    alignSelf: 'center',
+    width: wp(90),
+    height: hp(50),
+    backgroundColor: theme.colors.backgroundLight,
+    position: 'relative',
+    top: hp(10),
+    borderWidth: wp(4),
+    borderColor: theme.colors.orange,
+    justifyContent: 'flex-start',
+  },
+  infoText: {
+    fontFamily: 'VT323_400Regular',
+    fontSize: wp(6),
+  },
+  inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: 8,
-    marginTop: 10,
+    marginBottom: hp(2),
   },
-  inputlist: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  borderWidth: 0.4,
-  borderColor: theme.colors.text,
-  borderRadius: theme.radius.xxl,
-  borderCurve: 'continuous',
-  padding: 25,
-  paddingHorizontal: 20,
-  gap: 15,
-  marginBottom: 10,
-},
+  input: {
+    borderBottomWidth: 1,
+    flex: 1,
+    paddingVertical: hp(0),
+    fontFamily: 'VT323_400Regular',
+    fontSize: wp(6),
+    color: 'black'
+  },
+  warningText: {
+    fontFamily: 'VT323_400Regular',
+    fontSize: wp(3),
+    textAlign: 'justify'
+  },
+  termsText: {
+    fontSize: hp(1.3),
+    color: 'black',
+    textAlign: 'center',
+    position: 'absolute',
+    bottom: hp(1),
+    width: wp(90),
+    alignSelf: 'center'
+  },
+  buttonContainer: {
+    position: 'absolute',
+    alignSelf: 'center',
+    bottom: hp(10),
+  }
+
+
 })

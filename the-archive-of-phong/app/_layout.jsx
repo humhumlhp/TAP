@@ -1,4 +1,4 @@
-import { View, Text, ActivityIndicator } from 'react-native'
+import { View, Text, ActivityIndicator, StatusBar } from 'react-native'
 import React, { useEffect } from 'react'
 import { Stack, useRouter } from 'expo-router'
 import { AuthProvider, useAuth } from '../contexts/AuthContext'
@@ -35,23 +35,24 @@ const Mainlayout = () => {
   const router = useRouter();
 
   useEffect(() => {
-    supabase.auth.onAuthStateChange((_event, session) => {
-      //console.log('session user: ', session?.user.id)
-      if (session) {
-        setAuth(session?.user);
-        updateUserData(session?.user, session.user.email);
-        router.replace('/(main)/home'); //fix this back to /home before build the app
+    // In your _layout.jsx, modify the auth state change handler:
+    supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session?.user) {
+        setAuth(session.user);
 
+        // Check email verification first
+        if (!session.user.email_confirmed_at) {
+          router.replace('/emailVerification');
+          return;
+        }
 
-      }
-      else {
+        router.replace('/codeRedemption');
+
+      } else {
         setAuth(null);
         router.replace('/welcome');
-
       }
-
-
-    })
+    });
 
 
   }, []);
@@ -69,6 +70,7 @@ const Mainlayout = () => {
 
       }}
     />
+
   )
 }
 

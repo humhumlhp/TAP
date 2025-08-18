@@ -316,22 +316,5 @@ const styles = StyleSheet.create({
     marginTop: 10,
     textAlign: 'center',
   },
-  detailRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-  },
-  detailLabel: {
-    fontFamily: "VT323_400Regular",
-    fontSize: wp(6),
-    color: '#000',
-    width: wp(15),
-    textAlign: 'left',
-    paddingRight: wp(1),
-  },
-  detailValue: {
-    fontFamily: "VT323_400Regular",
-    fontSize: wp(6),
-    color: '#000',
-    flex: 1,
-  },
+  
 });

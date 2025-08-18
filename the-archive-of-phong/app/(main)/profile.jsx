@@ -16,8 +16,9 @@ import { supabase } from '../../lib/supabase'
 
 const profile = () => {
 
-  const { user: authUser, setUserData } = useAuth();
+  const { user: authUser, setUserData, setAuth } = useAuth();
   const [uploading, setUploading] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const onUploadAvatar = async () => {
     try {
@@ -71,24 +72,28 @@ const profile = () => {
     }
   };
 
-
-
-
-
-
-
-
-
-
-
-  const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-      setUserData(null);
-      router.replace('signUp'); // adjust route if needed
-    } catch (e) {
-      Alert.alert('Logout failed', e?.message || 'Something went wrong');
-    }
+  const handleLogout = () => {
+    if (loggingOut) return;
+    Alert.alert('Log out', 'Are you sure you want to log out?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Log out',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            setLoggingOut(true);
+            await supabase.auth.signOut();
+            // Properly clear auth (setUserData expects an object, so use setAuth)
+            setAuth(null);
+            router.replace('/welcome');
+          } catch (e) {
+            Alert.alert('Logout failed', e?.message || 'Something went wrong');
+          } finally {
+            setLoggingOut(false);
+          }
+        }
+      }
+    ]);
   };
 
   return (
@@ -147,11 +152,11 @@ const profile = () => {
             <Text style={styles.detailValue}>{authUser?.school || ''}</Text>
           </View>
         </View>
-<View style = {styles.logOutContainer}>
-        <Button onPress={handleLogout} width={wp(90)} height={hp(6)} >
-          <Text style={{ fontFamily: "VT323_400Regular", fontSize: wp(10) }}>LOGOUT</Text>
-        </Button>
-</View>
+        <View style = {styles.logOutContainer}>
+          <Button onPress={handleLogout} width={wp(90)} height={hp(6)} loading={loggingOut}>
+            <Text style={{ fontFamily: 'VT323_400Regular', fontSize: wp(10) }}>{loggingOut ? '...' : 'LOGOUT'}</Text>
+          </Button>
+        </View>
       </View>
     </ScreenWrapper>
   )
