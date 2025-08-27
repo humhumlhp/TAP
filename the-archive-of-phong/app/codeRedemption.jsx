@@ -141,14 +141,13 @@ const CodeRedemption = () => {
             <Text style={styles.infoText}>Class Code: </Text>
             <TextInput
               style={styles.input}
-              placeholder="Enter your class code"
               autoCapitalize="characters"
               onChangeText={value => classCodeRef.current = value}
             />
           </View>
 
           <Text style={styles.helperText}>
-            Get this code from your teacher to access your class feed.
+            Get this code from your friend to access your class/school feed.
           </Text>
         </View>
 
@@ -188,7 +187,7 @@ const styles = StyleSheet.create({
   formContainer: {
     alignSelf: 'center',
     width: wp(90),
-    height: hp(35),
+    height: hp(40),
     backgroundColor: theme.colors.backgroundLight,
     position: 'relative',
     top: hp(10),
@@ -200,7 +199,7 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: hp(3),
+    marginBottom: hp(1),
   },
   input: {
     borderBottomWidth: 1,
@@ -219,7 +218,7 @@ const styles = StyleSheet.create({
     fontFamily: 'VT323_400Regular',
     fontSize: wp(3.5),
     textAlign: 'center',
-    marginTop: hp(2),
+    marginTop: hp(4),
     color: theme.colors.text,
   },
   buttonContainer: {

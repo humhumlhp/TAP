@@ -73,7 +73,6 @@ const Login = () => {
             <TextInput
               style={styles.input}
               keyboardType='email-address'
-              placeholder='Enter your email'
               onChangeText={value => emailRef.current = value}
             />
           </View>
@@ -84,7 +83,6 @@ const Login = () => {
               style={styles.input}
               autoCapitalize="none"
               secureTextEntry={true}
-              placeholder='Enter your password'
               onChangeText={value => passwordRef.current = value}
             />
           </View>
@@ -140,7 +138,7 @@ const styles = StyleSheet.create({
   loginContainer: {
     alignSelf: 'center',
     width: wp(90),
-    height: hp(35),
+    height: hp(40),
     backgroundColor: theme.colors.backgroundLight,
     position: 'relative',
     top: hp(10),

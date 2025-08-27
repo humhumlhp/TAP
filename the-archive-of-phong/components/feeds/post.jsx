@@ -56,7 +56,7 @@ const Post = ({ item, index }) => {
                 <View style={styles.userAvatar}>
                   {item?.users?.image ? (
                     <Image
-                      source={{ uri: item?.users?.image }}
+                      source={{ uri:item?.users?.image }}
                       style={styles.avatar}
                       contentFit="cover"
                     />
@@ -89,7 +89,7 @@ const Post = ({ item, index }) => {
             <View style={styles.userDetailsContainer}>
               <View style={styles.userDetails}>
                 <View style={styles.userAvatar}>
-                  {authUser?.image ? (
+                  {item?.users?.image ? (
                     <Image
                       source={{ uri: item?.users?.image }}
                       style={styles.avatar}
@@ -97,7 +97,7 @@ const Post = ({ item, index }) => {
                     />
                   ) : (
                     <View style={[styles.avatar, styles.center]}>
-                      <Ionicons name='person' size={hp(7)} />
+                      <Ionicons name='person' size={wp(10)} />
                     </View>
                   )}
                 </View>

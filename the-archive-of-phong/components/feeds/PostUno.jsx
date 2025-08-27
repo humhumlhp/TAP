@@ -42,7 +42,7 @@ const PostUno = () => {
                             <Image source={{ uri: String(image) }} style={styles.avatar} contentFit="cover" />
                         ) : (
                             <View style={[styles.avatar, styles.center]}>
-                                <Ionicons name='person-sharp' size={hp(5.5)} strokeWidth={2} />
+                                <Ionicons name='person-sharp' size={hp(5.5)} strokeWidth={0} />
                             </View>
                         )}
 
@@ -104,11 +104,11 @@ const styles = StyleSheet.create({
         alignItems: 'flex-start',
     },
     avatar: {
-        height: hp(8),
-        width: hp(8),
+        height: hp(10),
+        width: hp(10),
         borderWidth: 1,
         borderColor: '#000',
-        backgroundColor: theme.colors.backgroundLight,
+        backgroundColor: theme.colors.orange,
         overflow: 'hidden',
     },
     center: {

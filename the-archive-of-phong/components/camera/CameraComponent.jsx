@@ -10,8 +10,6 @@ import { hp, wp } from '../../helpers/common';
 import { useFocusEffect } from 'expo-router';
 import { manipulateAsync, SaveFormat, FlipType } from 'expo-image-manipulator'; 
 import Button from '../Button';
-import { useFonts } from 'expo-font';
-import { VT323_400Regular } from '@expo-google-fonts/vt323'
 import { theme } from '../../constants/theme';
 const CameraComponent = ({
   onPhotoTaken,
@@ -31,12 +29,6 @@ const CameraComponent = ({
   const previewOpacity = useRef(new Animated.Value(0)).current;
   const opSeq = useRef(0); // increments to cancel in-flight operations
 
-  const [fontsLoaded] = useFonts({ VT323_400Regular });
-
-  // IMPORTANT: All hooks must run on every render in the same order.
-  // The previous version returned early BEFORE calling useFocusEffect when fonts weren't loaded yet,
-  // causing "Rendered more hooks than during the previous render" once fontsLoaded became true.
-  // We move/use the hook before any conditional return so hook order stays stable.
   useFocusEffect(
     React.useCallback(() => {
       setIsScreenFocused(true);
@@ -53,15 +45,6 @@ const CameraComponent = ({
       };
     }, [])
   );
-
-  if (!fontsLoaded) {
-    return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#0000ff" />
-        <Text>Loading fonts...</Text>
-      </View>
-    );
-  }
 
   // Toggle camera facing (front/back)
   const toggleCameraFacing = () => {
@@ -119,7 +102,7 @@ const CameraComponent = ({
     try {
   const seq = ++opSeq.current; // new operation token
       const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.85,
+        quality: 0.5,
         skipProcessing: true,
         base64: false,
       });
@@ -166,6 +149,7 @@ const CameraComponent = ({
   opSeq.current++; // invalidate any in-flight updates
     previewOpacity.setValue(0);
     setCapturedImageUri(null);
+    onMessageChange && onMessageChange(''); // Clear message on retake
     onRetakePhoto && onRetakePhoto();
   };
 
@@ -224,7 +208,7 @@ const CameraComponent = ({
                 <TextInput
                   style={styles.messageInput}
                   placeholder="Your message"
-                  placeholderTextColor={theme.colors.backgroundLight}
+                  placeholderTextColor={theme.colors.orange}
                   value={messageText}
                   onChangeText={onMessageChange}
                   multiline

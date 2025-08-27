@@ -7,9 +7,7 @@ import Button from '../../components/Button'
 import { hp, wp } from '../../helpers/common'
 import { router, useLocalSearchParams } from 'expo-router'
 import Ionicons from '@expo/vector-icons/Ionicons'
-import { useFonts } from 'expo-font';
-import { VT323_400Regular } from '@expo-google-fonts/vt323'
-import Post from '../../components/feeds/Post.jsx'
+import Post from '../../components/feeds/post.jsx'
 import { uploadService } from '../../services/uploadService'
 import { useAuth } from '../../contexts/AuthContext'
 
@@ -25,10 +23,6 @@ const postView = ({
   const [posts, setPosts] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
-
-  const [fontsLoaded] = useFonts({
-    VT323_400Regular
-  });
 
   // Load posts from Supabase via service
   const { user: authUser } = useAuth();
@@ -84,21 +78,12 @@ const postView = ({
   //  Key extractor for FlatList performance
   const keyExtractor = (item, index) => item.id?.toString() || index.toString();
 
-  if (!fontsLoaded) {
-    return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#0000ff" />
-        <Text>Loading fonts...</Text>
-      </View>
-    );
-  }
-
   // Loading state
   if (loading) {
     return (
       <ScreenWrapper bg={theme.colors.backgroundLight}>
         <View style={styles.container}>
-          <ActivityIndicator size="large" color="#0000ff" />
+          <ActivityIndicator size="large" color={theme.colors.orange} />
           <Text style={styles.loadingText}>Loading posts...</Text>
         </View>
       </ScreenWrapper>
@@ -111,11 +96,11 @@ const postView = ({
       <ScreenWrapper bg={theme.colors.backgroundLight}>
         <View style={styles.backButtonContainer}>
           <Button
-            width={wp(10)}
-            height={wp(10)}
+            width={wp(13)}
+            height={wp(13)}
             onPress={() => router.back()}
           >
-            <Ionicons name="arrow-back" size={20} color="black" />
+            <Ionicons name="arrow-back" size={30} color="black" />
           </Button>
         </View>
         <View style={styles.emptyContainer}>

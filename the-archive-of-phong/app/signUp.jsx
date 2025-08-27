@@ -62,17 +62,6 @@ const SignUp = () => {
         options: { data: { name } }
       });
 
-      // Enhanced debugging logs
-      console.log('=== SIGNUP DEBUG INFO ===');
-      console.log('Signup user:', user);
-      console.log('User ID:', user?.id);
-      console.log('User email:', user?.email);
-      console.log('Email confirmed at:', user?.email_confirmed_at);
-      console.log('User confirmation sent at:', user?.confirmation_sent_at);
-      console.log('Signup session:', session);
-      console.log('Signup error:', error);
-      console.log('========================');
-
       if (error) {
         console.error('Signup error:', error);
         Alert.alert('Sign Up Failed', error.message || 'Unknown error');
@@ -97,17 +86,6 @@ const SignUp = () => {
           // They can still proceed to email verification
         }
 
-        // Show success message and redirect to code redemption
-        Alert.alert(
-          'Account Created!',
-          'Now enter your class codes to access your feed.',
-          [
-            {
-              text: 'Continue',
-              onPress: () => router.replace('/codeRedemption')
-            }
-          ]
-        );
 
 
 
@@ -132,7 +110,6 @@ const SignUp = () => {
 
     <ScreenWrapper bg={theme.colors.backgroundLight}>
       <View style={styles.container}>
-        <StatusBar barStyle={'dark-content'} />
         <View style={styles.backButtonContainer}>
           <Button
             width={wp(13)}

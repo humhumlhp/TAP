@@ -12,7 +12,8 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": false
+      "supportsTablet": false,
+      "orientation": "portrait"
     },
     "android": {
       "adaptiveIcon": {

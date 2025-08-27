@@ -1,5 +1,5 @@
 // app/(main)/home.jsx - REFACTORED VERSION
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   View,
@@ -33,7 +33,7 @@ const Home = () => {
   // State management - keeping all shared state in the parent component
   const [capturedImage, setCapturedImage] = useState(null);
   const [targetAudience, setTargetAudience] = useState('yourself');
-  const [messageText, setMessageText] = useRef('');
+  const [messageText, setMessageText] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [showFeed, setShowFeed] = useState(false);
 
@@ -56,10 +56,10 @@ const Home = () => {
         <View style={styles.container}>
           <View style={styles.permissionContainer}>
             <Text style={styles.permissionText}>
-              Ứng dụng cần được cấp quyền Camera
+              this app needs to access the camera
             </Text>
             <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
-              <Text style={styles.permissionButtonText}>Cho phép truy cập</Text>
+              <Text style={styles.permissionButtonText}>Allow permission</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -263,21 +263,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: wp(4),
   },
   permissionText: {
-    fontSize: hp(2),
+    fontSize: hp(5),
     textAlign: 'center',
     marginBottom: 20,
-    color: 'white',
+    color: 'black',
+    fontFamily: 'VT323_400Regular'
   },
   permissionButton: {
-    backgroundColor: 'white',
+    backgroundColor: theme.colors.orange,
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 25,
   },
   permissionButtonText: {
     color: 'black',
-    fontSize: hp(1.8),
+    fontSize: hp(4),
     fontWeight: '600',
+    fontFamily: 'VT323_400Regular',
   },
   loadingText: {
     color: 'white',

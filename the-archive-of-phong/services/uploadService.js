@@ -106,12 +106,14 @@ class UploadService {
       // Test storage bucket access first
       const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
       console.log('Available buckets:', buckets, 'Error:', bucketError);
+      console.log('Buckets type:', typeof buckets, 'Is array:', Array.isArray(buckets));
       
-      const postsBucket = buckets?.find(b => b.name === 'posts');
-      if (!postsBucket) {
-        throw new Error('Posts storage bucket not found. Available buckets: ' + buckets?.map(b => b.name).join(', '));
-      }
-      console.log('Posts bucket found:', postsBucket);
+      // Skip bucket check for now - try direct upload
+      // const postsBucket = buckets?.find(b => b.name === 'posts');
+      // if (!postsBucket) {
+      //   throw new Error('Posts storage bucket not found. Available buckets: ' + buckets?.map(b => b.name).join(', '));
+      // }
+      console.log('Proceeding with upload (bucket check skipped)...');
 
       // Create unique filename
       const timestamp = Date.now();
