@@ -33,7 +33,7 @@ const Home = () => {
   // State management - keeping all shared state in the parent component
   const [capturedImage, setCapturedImage] = useState(null);
   const [targetAudience, setTargetAudience] = useState('yourself');
-  const [messageText, setMessageText] = useState('');
+  const [messageText, setMessageText] = useRef('');
   const [isUploading, setIsUploading] = useState(false);
   const [showFeed, setShowFeed] = useState(false);
 

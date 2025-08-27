@@ -40,13 +40,18 @@ const Mainlayout = () => {
       if (session?.user) {
         setAuth(session.user);
 
-        // Check email verification first
-        if (!session.user.email_confirmed_at) {
-          router.replace('/emailVerification');
-          return;
+        // Check if user has completed code redemption
+        const userData = await getUserData(session.user.id);
+        
+        if (userData.success) {
+          // Store the full user data including name, class, school
+          setUserData({ ...userData.data, email: session.user.email });
+          // User has verified codes, go to main app
+          router.replace('/(main)/home');
+        } else {
+          // User needs to enter school/class codes
+          router.replace('/codeRedemption');
         }
-
-        router.replace('/codeRedemption');
 
       } else {
         setAuth(null);

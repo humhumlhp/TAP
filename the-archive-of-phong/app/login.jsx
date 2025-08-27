@@ -2,13 +2,12 @@ import { Alert, StyleSheet, Text, TextInput, View, Pressable } from 'react-nativ
 import React, { useState, useRef } from 'react'
 import ScreenWrapper from '../components/ScreenWrapper'
 import { theme } from '../constants/theme'
-import Icon from '../assets/icons'
-import { StatusBar } from 'expo-status-bar'
-import BackButton from '../components/BackButton'
+import Ionicons from '@expo/vector-icons/Ionicons'
+import { StatusBar } from 'react-native'
 import { useRouter } from 'expo-router'
 import { hp, wp } from '../helpers/common'
-import Input from '../components/Input'
 import Button from '../components/Button'
+import { Image } from 'expo-image'
 import { supabase } from '../lib/supabase'
 
 const Login = () => {
@@ -16,119 +15,174 @@ const Login = () => {
     const emailRef = useRef("");
     const passwordRef = useRef("");
     const [loading, setLoading] = useState(false);
-    const onSubmit = async ()=>{
-      if (!emailRef.current || !passwordRef.current){
-        Alert.alert('Login', 'please fill all the fields!');
+    
+    const onSubmit = async () => {
+      if (!emailRef.current || !passwordRef.current) {
+        Alert.alert('Login', 'Please fill all the fields!');
         return;
       }
+      
       let email = emailRef.current.trim();
       let password = passwordRef.current.trim();
       setLoading(true);
-      const {error} = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      console.log('error', error);
-      if (error){
-        Alert.alert('Login', error.message);
+      
+      try {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        
+        if (error) {
+          Alert.alert('Login Failed', error.message);
+        }
+        // Success handling is done by _layout.jsx auth state listener
+      } catch (error) {
+        console.error('Login error:', error);
+        Alert.alert('Error', 'Something went wrong. Please try again.');
+      } finally {
+        setLoading(false);
       }
-
     }
   return (
-    <ScreenWrapper bg = {theme.colors.background}>
-      <StatusBar style = 'dark' />
+    <ScreenWrapper bg={theme.colors.backgroundLight}>
       <View style={styles.container}>
-        <BackButton router ={router} />
-        {/**welcome Text */}
-        <View>
-            <Text style = {styles.welcomeText}> Eyyyy,</Text>
-            <Text style = {styles.welcomeText}> quay lại rồi hả?</Text>
+        <StatusBar barStyle={'dark-content'} />
+        <View style={styles.backButtonContainer}>
+          <Button
+            width={wp(13)}
+            height={wp(13)}
+            onPress={() => router.back()}
+          >
+            <Ionicons name="arrow-back" size={30} color="black" />
+          </Button>
         </View>
-
-
-
-
-        {/**form Text */}
-        <View style = {styles.form}>
-          <Text style = {{fontSize: hp(1.5), color: theme.colors.text}}>
-            Xin hãy tiếp tục
-          </Text>
-          <Input
-            icon = {<Icon name = "mail" size={26} strokeWidth={1.6}/>}
-            placeholder = 'Email đăng kí'
-            onChangeText = {value =>emailRef.current = value}
-
+        
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>Welcome Back</Text>
+        </View>
+        
+        <View style={styles.loginContainer}>
+          <Image
+            source={require('../assets/images/tap-prj.svg')}
+            style={{ width: wp(40), height: wp(40), alignSelf: 'center' }}
+            contentFit='contain'
           />
-          <Input
-            icon = {<Icon name = "lock" size={26} strokeWidth={1.6}/>}
-            placeholder = 'Mật khẩu'
-            secureTextEntry
-            onChangeText = {value =>passwordRef.current = value}
-          />
-          <Text style = {styles.forgotPassword}>Quên mật khẩu?</Text>
-          {/**button */}
-          <Button title ={'Đăng nhập'} loading = {loading} onPress = {onSubmit} />
 
-          {/**footer */}
-          <View style = {styles.footer}>
-            <Text style = {styles.footerText}>Không có tài khoản?</Text>
-            <Pressable onPress={() => router.push('signUp')}>
-              <Text style = {[styles.footerText, {color: theme.colors.primaryDark, fontWeight: theme.fonts.semibold}]}>Đăng kí</Text>
-            </Pressable>
-
+          <View style={styles.inputContainer}>
+            <Text style={styles.infoText}>Email: </Text>
+            <TextInput
+              style={styles.input}
+              keyboardType='email-address'
+              placeholder='Enter your email'
+              onChangeText={value => emailRef.current = value}
+            />
           </View>
 
-
-
+          <View style={styles.inputContainer}>
+            <Text style={styles.infoText}>Password: </Text>
+            <TextInput
+              style={styles.input}
+              autoCapitalize="none"
+              secureTextEntry={true}
+              placeholder='Enter your password'
+              onChangeText={value => passwordRef.current = value}
+            />
+          </View>
         </View>
 
+        <View style={styles.buttonContainer}>
+          <Button
+            title={loading ? 'Signing In...' : 'Sign In'}
+            width={wp(90)}
+            height={hp(7)}
+            fontSize={hp(5)}
+            disabled={loading}
+            onPress={onSubmit}
+          />
+        </View>
 
+        <View style={styles.footerContainer}>
+          <Text style={styles.footerText}>Don't have an account? </Text>
+          <Pressable onPress={() => router.push('signUp')}>
+            <Text style={[styles.footerText, { color: theme.colors.orange, fontWeight: 'bold' }]}>
+              Sign Up
+            </Text>
+          </Pressable>
+        </View>
       </View>
-      
-
-
-
-
     </ScreenWrapper>
-
-    
   )
 }
 
 export default Login
 
 const styles = StyleSheet.create({
-  container:{
+  container: {
+    flex: 1
+  },
+  titleContainer: {
+    position: 'relative',
+    width: wp(90),
+    top: hp(10),
+    alignSelf: 'center',
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: hp(5),
+    fontFamily: 'VT323_400Regular',
+    textAlign: 'center',
+  },
+  backButtonContainer: {
+    position: 'absolute',
+    left: wp(5),
+    top: hp(1)
+  },
+  loginContainer: {
+    alignSelf: 'center',
+    width: wp(90),
+    height: hp(35),
+    backgroundColor: theme.colors.backgroundLight,
+    position: 'relative',
+    top: hp(10),
+    borderWidth: wp(4),
+    borderColor: theme.colors.orange,
+    justifyContent: 'flex-start',
+    padding: wp(5),
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: hp(3),
+  },
+  input: {
+    borderBottomWidth: 1,
     flex: 1,
-    gap: 45,
-    paddingHorizontal: wp(5),
-    
+    paddingVertical: hp(0),
+    fontFamily: 'VT323_400Regular',
+    fontSize: wp(6),
+    color: 'black'
   },
-  welcomeText: {
-    fontSize: hp(4),
-    fontWeight: theme.fonts.bold,
-    color: theme.colors.text,
+  infoText: {
+    fontFamily: 'VT323_400Regular',
+    fontSize: wp(6),
   },
-  form:{
-    gap:25,
+  buttonContainer: {
+    position: 'absolute',
+    alignSelf: 'center',
+    bottom: hp(15),
   },
-  forgotPassword:{
-    textAlign: 'right',
-    fontWeight: theme.fonts.semibold,
-    color: theme.colors.text
-  },
-  footer:{
-    flexDirection:'row',
+  footerContainer: {
+    flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 5,
+    position: 'absolute',
+    bottom: hp(5),
+    width: wp(100),
+    alignSelf: 'center',
   },
-  footerText:{
-    textAlign: 'center',
-    color: theme.colors.text,
-    fontSize: hp(1.6)
+  footerText: {
+    fontSize: hp(2),
+    color: 'black',
+    fontFamily: 'VT323_400Regular',
   }
-
-
-
 })

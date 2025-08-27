@@ -103,6 +103,16 @@ class UploadService {
     try {
       console.log('Starting image upload...', imageUri);
 
+      // Test storage bucket access first
+      const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
+      console.log('Available buckets:', buckets, 'Error:', bucketError);
+      
+      const postsBucket = buckets?.find(b => b.name === 'posts');
+      if (!postsBucket) {
+        throw new Error('Posts storage bucket not found. Available buckets: ' + buckets?.map(b => b.name).join(', '));
+      }
+      console.log('Posts bucket found:', postsBucket);
+
       // Create unique filename
       const timestamp = Date.now();
       const randomString = Math.random().toString(36).substring(7);
@@ -110,19 +120,21 @@ class UploadService {
 
       console.log('Generated filename:', fileName);
 
-      // Create file object for React Native
-      const fileObject = {
-        uri: imageUri,
-        type: 'image/jpeg',
-        name: `${timestamp}_${randomString}.jpg`,
-      };
+      // Convert image URI to ArrayBuffer for better React Native compatibility
+      const response = await fetch(imageUri);
+      console.log('Fetch response status:', response.status, response.ok);
       
-      console.log('File object created:', fileObject);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch image: ${response.status}`);
+      }
+      
+      const arrayBuffer = await response.arrayBuffer();
+      console.log('ArrayBuffer created:', arrayBuffer.byteLength, 'bytes');
 
-      // Upload to Supabase Storage
+      // Upload to Supabase Storage using ArrayBuffer
       const { data, error } = await supabase.storage
         .from('posts')
-        .upload(fileName, fileObject, {
+        .upload(fileName, arrayBuffer, {
           contentType: 'image/jpeg',
           upsert: false
         });

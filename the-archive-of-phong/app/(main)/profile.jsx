@@ -45,11 +45,17 @@ const profile = () => {
       const timestamp = Date.now();
       const randomString = Math.random().toString(36).substring(7);
       const path = `${authUser.id}/avatar_${timestamp}_${randomString}.jpg`;
-      const file = { uri, type: 'image/jpeg', name: `avatar_${timestamp}.jpg` };
+      
+      // Create file object for React Native (same pattern as uploadService)
+      const fileObject = {
+        uri: uri,
+        type: 'image/jpeg',
+        name: `avatar_${timestamp}_${randomString}.jpg`,
+      };
 
       const { data, error } = await supabase.storage
         .from('posts')
-        .upload(path, file, { contentType: 'image/jpeg', upsert: true });
+        .upload(path, fileObject, { contentType: 'image/jpeg', upsert: true });
       if (error) throw error;
 
       const { data: urlData } = supabase.storage.from('posts').getPublicUrl(path);

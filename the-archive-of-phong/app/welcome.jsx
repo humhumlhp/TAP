@@ -1,27 +1,13 @@
 import React from 'react'
-import { StyleSheet, View, Text, StatusBar, Pressable, ActivityIndicator } from 'react-native'
+import { StyleSheet, View, Text, StatusBar, Pressable } from 'react-native'
 import ScreenWrapper from '../components/ScreenWrapper'
 import { hp, wp } from '../helpers/common'
 import { theme } from '../constants/theme'
 import Button from '../components/Button'
 import { useRouter } from 'expo-router'
-import { VT323_400Regular } from '@expo-google-fonts/vt323'
-import { useFonts } from 'expo-font'
-import { SvgXml } from 'react-native-svg'
 import { Image } from 'expo-image'
 
 const Welcome = () => {
-  const [fontsLoaded] = useFonts({
-    VT323_400Regular
-  });
-  if (!fontsLoaded) {
-    return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#0000ff" />
-        <Text>Loading fonts...</Text>
-      </View>
-    );
-  }
   const router = useRouter();
   return (
     <ScreenWrapper bg={theme.colors.backgroundLight}>

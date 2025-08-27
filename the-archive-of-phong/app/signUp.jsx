@@ -13,102 +13,110 @@ import { supabase } from '../lib/supabase'
 
 
 
-const signUp = () => {
+// Component must be capitalized for React and hooks rules
+const SignUp = () => {
 
 
   const emailRef = useRef("");
   const nameRef = useRef("");
   const passwordRef = useRef("");
+  const repasswordRef = useRef("");
   const [loading, setLoading] = useState(false);
 
 
-// After pressing Sign Up button
+  const router = useRouter();
+
+  // After pressing Sign Up button
   const onSubmit = async () => {
-
-
-    // Check weather all field are filled or not
-    
-    if (!emailRef.current || !nameRef.current || !passwordRef.current) {
-      Alert.alert('Sign Up', 'Please fill all the fields!');
-      return;
-    }
 
     let name = nameRef.current.trim();
     let password = passwordRef.current.trim();
+    let repassword = repasswordRef.current.trim();
     let email = emailRef.current.trim();
 
-    if (name.length < 2) {
-      Alert.alert('Invalid name', 'Name must be at least 2 characters long');
-      return;
-    }
+  setLoading(true);
 
-    if (password.length < 8) {
-      Alert.alert('Weak password', 'Password must be at least 8 characters long');
-      return;
-    }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      Alert.alert('Invalid Email', 'Please enter a valid email address');
-      return;
-    }
-
-    setLoading(true);
-
-
-    //The real data process start here:
-    try { 
-      const { data: { user, session }, error: signUpError } = await supabase.auth.signUp({
+    //SignUp form Validation
+    try {
+      //Uncomment these when push up 
+      // if (!email || !name || !password || !repassword) {
+      //   Alert.alert('Sign Up', 'Please fill all the fields');
+      //   return;
+      // }
+      // if (password !== repassword) {
+      //   Alert.alert("Passwords don't match", 'Please re-type your password');
+      //   return;
+      // }
+      // if (name.length < 2) {
+      //   Alert.alert('Invalid name', 'Name must be at least 2 characters long');
+      //   return;
+      // }
+      // if (password.length < 8) {
+      //   Alert.alert('Weak password', 'Password must be at least 8 characters long');
+      //   return;
+      // }
+      //SignUp - authenticate users 
+      const { data: { user, session }, error } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          data: {
-            name: name,
-          }
-        }
+        options: { data: { name } }
       });
 
-      if (signUpError) {
-        console.error('Signup error:', signUpError);
-        Alert.alert('Sign Up Failed', signUpError.message);
+      // Enhanced debugging logs
+      console.log('=== SIGNUP DEBUG INFO ===');
+      console.log('Signup user:', user);
+      console.log('User ID:', user?.id);
+      console.log('User email:', user?.email);
+      console.log('Email confirmed at:', user?.email_confirmed_at);
+      console.log('User confirmation sent at:', user?.confirmation_sent_at);
+      console.log('Signup session:', session);
+      console.log('Signup error:', error);
+      console.log('========================');
+
+      if (error) {
+        console.error('Signup error:', error);
+        Alert.alert('Sign Up Failed', error.message || 'Unknown error');
         return;
       }
+      
+      //Create a profile for users
 
       if (user) {
-        const  {error : insertError} = await supabase
-        .from('users')
-        .insert({
-          id: user.id,
-          email: email,
-          name: name,
-          email_verified: false,
-          verification_status: 'unverified'
-        });
-         if (insertError) {
-                    console.error('User creation error:', insertError);
-                    // Don't show error to user as auth signup succeeded
-                    // They can still proceed to email verification
-                }
+        const { error: insertError } = await supabase
+          .from('users')
+          .insert({
+            id: user.id,
+            email: email,
+            name: name,
+            email_verified: false,
+            verification_status: 'unverified'
+          });
+        if (insertError) {
+          console.error('User creation error:', insertError);
+          // Don't show error to user as auth signup succeeded
+          // They can still proceed to email verification
+        }
 
-                // Show success message and redirect to email verification
-                Alert.alert(
-                    'Account Created!',
-                    'Please check your email to verify your account before continuing.',
-                    [
-                        {
-                            text: 'OK',
-                            onPress: () => router.replace('/emailVerification')
-                        }
-                    ]
-                );
-
-
+        // Show success message and redirect to code redemption
+        Alert.alert(
+          'Account Created!',
+          'Now enter your class codes to access your feed.',
+          [
+            {
+              text: 'Continue',
+              onPress: () => router.replace('/codeRedemption')
+            }
+          ]
+        );
 
 
-      }
+
+
+  }
 
     } catch (error) {
       console.error('Unexpected signup error:', error);
-      Alert.alert('Error' , 'Something is wrong, please try again');
+      Alert.alert('Error', 'Something is wrong, please try again');
     } finally {
       setLoading(false)
     }
@@ -118,7 +126,7 @@ const signUp = () => {
 
   }
 
-  const router = useRouter();
+  
 
   return (
 
@@ -144,7 +152,7 @@ const signUp = () => {
             contentFit='contain'
           />
 
-          <View style={styles.inputContainer}>
+          <View style={styles.inputContainer}>  
             <Text style={styles.infoText}>Full name: </Text>
 
             <TextInput
@@ -162,7 +170,7 @@ const signUp = () => {
 
             <TextInput
               style={styles.input}
-              keyboardType='email-address' 
+              keyboardType='email-address'
               onChangeText={value => emailRef.current = value} //put the email into emailRef.current
 
             />
@@ -170,16 +178,21 @@ const signUp = () => {
           </View>
           <View style={styles.inputContainer}>
             <Text style={styles.infoText}>Password: </Text>
-
             <TextInput
               style={styles.input}
-
               autoCapitalize="none"
+              secureTextEntry = {true}
               onChangeText={value => passwordRef.current = value} //put the password into passwordRef
-
-
             />
-
+          </View>
+           <View style={styles.inputContainer}>
+            <Text style={styles.infoText}>Re-type password: </Text>
+            <TextInput
+              style={styles.input}
+              autoCapitalize="none"
+              secureTextEntry = {true}
+              onChangeText={value => repasswordRef.current = value} //put the password into passwordRef
+            />
           </View>
           <Text style={styles.warningText}> Important: To access your school's feed, your registered name must match your school ID name exactly. If the names don't match, you may not be able to access the feed. </Text>
         </View>
@@ -187,10 +200,11 @@ const signUp = () => {
 
         <View style={styles.buttonContainer}>
           <Button
-            title='Sign Up'
+            title={loading ? 'Signing Up...' : 'Sign Up'}
             width={wp(90)}
             height={hp(7)}
             fontSize={hp(5)}
+            disabled={loading}
             onPress={onSubmit}
           />
 
@@ -210,7 +224,7 @@ const signUp = () => {
   )
 }
 
-export default signUp
+export default SignUp
 
 const styles = StyleSheet.create({
   container: {
