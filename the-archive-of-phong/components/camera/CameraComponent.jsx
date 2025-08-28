@@ -256,7 +256,7 @@ const CameraComponent = ({
           <Button width={wp(10)} height={wp(10)} onPress={toggleFlash}>
             <Ionicons name={getFlashIcon()} size={28} color="black" />
           </Button>
-          <Button width={wp(23)} height={wp(23)} onPress={takePicture} top={-wp(1)} title='TAP' fontSize={wp(15)} />
+          <Button width={wp(23)} height={wp(23)} onPress={takePicture} title='TAP' fontSize={wp(15)} />
           <Button width={wp(10)} height={wp(10)} onPress={toggleCameraFacing}>
             <MaterialIcons name="flip-camera-ios" size={28} color="black" />
           </Button>
@@ -315,12 +315,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.6)',
     color: theme.colors.orange,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    // paddingVertical: 12,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.3)',
     fontSize: hp(2.5),
-    minHeight: 50,
-    maxHeight: 100,
+    minHeight: 20,
+    maxHeight: 50,
     textAlign: 'center',
     fontFamily: 'VT323_400Regular'
   },

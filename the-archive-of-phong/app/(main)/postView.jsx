@@ -163,12 +163,16 @@ const styles = StyleSheet.create({
   },
   backButtonContainer: {
     position: 'absolute',
-    top: hp(6),
+    top: hp(2),
     left: wp(5),
+    zIndex: 1000, // Ensure it's above other elements
+    // marginBottom: hp(2),
   },
   listContainer: {
-  position:'relative',
-  top: hp(8),
+    position:'relative',
+    top: hp(5),
+    flex: 1,
+    height: hp(82), // Give explicit height for web scrolling
   },
   loadingText: {
     fontFamily: "VT323_400Regular",

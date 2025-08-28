@@ -239,7 +239,6 @@ const Home = () => {
                 params: { targetAudience },
               })
             }
-            top={-hp(.3)}
           />
         </View>
       </View>

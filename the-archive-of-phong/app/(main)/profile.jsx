@@ -174,6 +174,8 @@ const styles = StyleSheet.create({
   backButtonContainer: {
     position: 'absolute',
     left: wp(5),
+    top: hp(6),
+    zIndex: 1000, // Ensure it's above other elements
   },
   avatarContainer: {
     position: 'relative',

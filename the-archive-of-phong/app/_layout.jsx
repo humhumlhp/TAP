@@ -1,4 +1,4 @@
-import { View, Text, ActivityIndicator, StatusBar } from 'react-native'
+import { View, Text, ActivityIndicator, StatusBar, Platform } from 'react-native'
 import React, { useEffect } from 'react'
 import { Stack, useRouter } from 'expo-router'
 import { AuthProvider, useAuth } from '../contexts/AuthContext'
@@ -22,11 +22,57 @@ const _layout = () => {
       </View>
     );
   }
+  
+
+
+
+
+  const WebContainer = ({ children }) => {
+    if (Platform.OS !== 'web') {
+      return children;
+    }
+
+    // Calculate width to maintain mobile aspect ratio (390/844) with full height
+    const mobileRatio = 390 / 844;
+    const containerHeight = '100vh';
+    const containerWidth = `${mobileRatio * 100}vh`; // width = height * ratio
+
+    return (
+      <View style={{
+        flex: 1,
+        backgroundColor: '#f0f0f0',
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: '100vh'
+      }}>
+        <View style={{
+          width: containerWidth,
+          height: containerHeight,
+          backgroundColor: 'white',
+          borderRadius: 25,
+          overflow: 'hidden',
+          boxShadow: Platform.OS === 'web' ? '0px 10px 20px rgba(0, 0, 0, 0.25)' : undefined,
+          shadowColor: Platform.OS !== 'web' ? '#000' : undefined,
+          shadowOffset: Platform.OS !== 'web' ? {
+            width: 0,
+            height: 10,
+          } : undefined,
+          shadowOpacity: Platform.OS !== 'web' ? 0.25 : undefined,
+          shadowRadius: Platform.OS !== 'web' ? 20 : undefined,
+          elevation: Platform.OS !== 'web' ? 20 : undefined,
+        }}>
+          {children}
+        </View>
+      </View>
+    );
+  };
 
   return (
     <AuthProvider>
-      <StatusBar barStyle={'dark-content'} />
-      <Mainlayout />
+      <WebContainer>
+        <StatusBar barStyle={'dark-content'} />
+        <Mainlayout />
+      </WebContainer>
     </AuthProvider>
   )
 }
