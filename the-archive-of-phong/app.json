@@ -2,9 +2,9 @@
   "expo": {
     "name": "the-archive-of-phong",
     "slug": "the-archive-of-phong",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/tap-prj.svg",
     "scheme": "thearchiveofphong",
     "font": {
       "VT323-Regular": "./assets/fonts/VT323-Regular.ttf"
