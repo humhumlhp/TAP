@@ -38,23 +38,22 @@ const SignUp = () => {
 
     //SignUp form Validation
     try {
-      //Uncomment these when push up 
-      // if (!email || !name || !password || !repassword) {
-      //   Alert.alert('Sign Up', 'Please fill all the fields');
-      //   return;
-      // }
-      // if (password !== repassword) {
-      //   Alert.alert("Passwords don't match", 'Please re-type your password');
-      //   return;
-      // }
-      // if (name.length < 2) {
-      //   Alert.alert('Invalid name', 'Name must be at least 2 characters long');
-      //   return;
-      // }
-      // if (password.length < 8) {
-      //   Alert.alert('Weak password', 'Password must be at least 8 characters long');
-      //   return;
-      // }
+      if (!email || !name || !password || !repassword) {
+        Alert.alert('Sign Up', 'Please fill all the fields');
+        return;
+      }
+      if (password !== repassword) {
+        Alert.alert("Passwords don't match", 'Please re-type your password');
+        return;
+      }
+      if (name.length < 2) {
+        Alert.alert('Invalid name', 'Name must be at least 2 characters long');
+        return;
+      }
+      if (password.length < 8) {
+        Alert.alert('Weak password', 'Password must be at least 8 characters long');
+        return;
+      }
       //SignUp - authenticate users 
       const { data: { user, session }, error } = await supabase.auth.signUp({
         email,

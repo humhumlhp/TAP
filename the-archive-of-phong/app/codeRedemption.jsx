@@ -102,16 +102,7 @@ const CodeRedemption = () => {
       }
 
       // Success - redirect to main app
-      Alert.alert(
-        'Success!',
-        `Welcome to ${classData.class_name} at ${classData.school_name}!`,
-        [
-          {
-            text: 'Continue',
-            onPress: () => router.replace('/(main)/home')
-          }
-        ]
-      );
+       () => router.replace('/(main)/home')  
 
     } catch (error) {
       console.error('Unexpected error:', error);
