@@ -83,36 +83,51 @@ const Mainlayout = () => {
 
   useEffect(() => {
     // In your _layout.jsx, modify the auth state change handler:
-    supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state change:', event, session?.user?.id);
+      
       if (session?.user) {
-        setAuth(session.user);
-
         // Check if user has completed code redemption
         const userData = await getUserData(session.user.id);
         
         if (userData.success) {
-          // Store the full user data including name, class, school
-          setUserData({ ...userData.data, email: session.user.email });
+          // Store the full user data including auth info and profile data
+          const fullUserData = { 
+            ...session.user, 
+            ...userData.data,
+            email: session.user.email 
+          };
+          console.log('Setting full user data:', fullUserData);
+          setAuth(fullUserData);
           // User has verified codes, go to main app
           router.replace('/(main)/home');
         } else {
-          // User needs to enter school/class codes
+          // User needs to enter school/class codes - set basic auth info
+          setAuth(session.user);
           router.replace('/codeRedemption');
         }
 
       } else {
+        console.log('No session, clearing auth and redirecting to welcome');
         setAuth(null);
+        setUserData(null);
         router.replace('/welcome');
       }
     });
 
-
+    // Cleanup function to remove listener
+    return () => {
+      subscription?.unsubscribe();
+    };
   }, []);
 
 
   const updateUserData = async (user) => {
     let res = await getUserData(user?.id);
-    if (res.success) setUserData({ ...res.data, email: user.email });
+    if (res.success) {
+      const fullUserData = { ...user, ...res.data, email: user.email };
+      setAuth(fullUserData);
+    }
   }
   return (
     <Stack

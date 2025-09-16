@@ -66,7 +66,7 @@ const profile = () => {
       if (updateErr) throw updateErr;
 
       // Update local auth state
-      setUserData({ ...authUser, image: publicUrl });
+      setAuth({ ...authUser, image: publicUrl });
     } catch (e) {
       console.log('Avatar upload error:', e);
       Alert.alert('Upload failed', e?.message || 'Something went wrong');
@@ -75,28 +75,43 @@ const profile = () => {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (loggingOut) return;
-    Alert.alert('Log out', 'Are you sure you want to log out?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Log out',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            setLoggingOut(true);
-            await supabase.auth.signOut();
-            // Properly clear auth (setUserData expects an object, so use setAuth)
-            setAuth(null);
-            router.replace('/welcome');
-          } catch (e) {
-            Alert.alert('Logout failed', e?.message || 'Something went wrong');
-          } finally {
-            setLoggingOut(false);
-          }
-        }
+    
+    // For web compatibility, bypass Alert and logout directly
+    // Later we can add a custom confirmation modal if needed
+    try {
+      setLoggingOut(true);
+      console.log('Starting logout process...');
+      
+      // Clear local auth state immediately
+      setAuth(null);
+      setUserData(null);
+      
+      // Sign out from Supabase
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Supabase signOut error:', error);
+        // Don't throw error, continue with logout
       }
-    ]);
+      
+      console.log('Successfully signed out from Supabase');
+      console.log('Cleared local auth state, redirecting...');
+      
+      // Force redirect to welcome page with a small delay to ensure state is cleared
+      setTimeout(() => {
+        router.replace('/welcome');
+      }, 100);
+      
+    } catch (e) {
+      console.error('Logout error:', e);
+      // Even if there's an error, clear state and redirect
+      setAuth(null);
+      setUserData(null);
+      router.replace('/welcome');
+    } finally {
+      setLoggingOut(false);
+    }
   };
 
   return (

@@ -85,6 +85,11 @@ const SignUp = () => {
           // They can still proceed to email verification
         }
 
+        console.log('User created successfully, redirecting to code redemption...');
+        
+        // Redirect to code redemption page after successful signup
+        router.replace('/codeRedemption');
+
 
 
 

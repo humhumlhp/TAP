@@ -102,7 +102,7 @@ const CodeRedemption = () => {
       }
 
       // Success - redirect to main app
-       () => router.replace('/(main)/home')  
+      router.replace('/(main)/home');  
 
     } catch (error) {
       console.error('Unexpected error:', error);
