@@ -82,7 +82,40 @@ const Mainlayout = () => {
   const router = useRouter();
 
   useEffect(() => {
-    // In your _layout.jsx, modify the auth state change handler:
+    // Check for existing session first
+    const checkInitialSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          console.log('Initial session found:', session.user.id);
+          const userData = await getUserData(session.user.id);
+          
+          if (userData.success) {
+            const fullUserData = { 
+              ...session.user, 
+              ...userData.data,
+              email: session.user.email 
+            };
+            console.log('Setting initial full user data:', fullUserData);
+            setAuth(fullUserData);
+            router.replace('/(main)/home');
+          } else {
+            setAuth(session.user);
+            router.replace('/codeRedemption');
+          }
+        } else {
+          console.log('No initial session found');
+          router.replace('/welcome');
+        }
+      } catch (error) {
+        console.error('Error checking initial session:', error);
+        router.replace('/welcome');
+      }
+    };
+
+    checkInitialSession();
+
+    // Set up auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state change:', event, session?.user?.id);
       

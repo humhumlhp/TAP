@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View, Alert } from 'react-native'
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import ScreenWrapper from '../../components/ScreenWrapper'
 import { theme } from '../../constants/theme'
 import { useAuth } from '../../contexts/AuthContext'
@@ -11,6 +11,7 @@ import { Image } from 'expo-image'
 import Icon from '../../assets/icons'
 import * as ImagePicker from 'expo-image-picker'
 import { supabase } from '../../lib/supabase'
+import { getUserData } from '../../services/userService'
 
 
 
@@ -19,6 +20,42 @@ const profile = () => {
   const { user: authUser, setUserData, setAuth } = useAuth();
   const [uploading, setUploading] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  // Load user data when component mounts or when authUser.id changes
+  useEffect(() => {
+    const loadUserData = async () => {
+      if (!authUser?.id) return;
+      
+      // If we already have complete user data (name, class, school), don't reload
+      if (authUser.name && authUser.class && authUser.school) return;
+      
+      try {
+        setLoading(true);
+        console.log('Loading user data for profile page...');
+        
+        const userData = await getUserData(authUser.id);
+        if (userData.success) {
+          // Merge the current auth user with the profile data
+          const fullUserData = { 
+            ...authUser, 
+            ...userData.data,
+            email: authUser.email 
+          };
+          console.log('Profile: Updated user data:', fullUserData);
+          setAuth(fullUserData);
+        } else {
+          console.error('Failed to load user data:', userData.msg);
+        }
+      } catch (error) {
+        console.error('Error loading user data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadUserData();
+  }, [authUser?.id]);
 
   const onUploadAvatar = async () => {
     try {
@@ -159,15 +196,15 @@ const profile = () => {
         <View style={styles.userInfoContainer}>
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>name:</Text>
-            <Text style={styles.detailValue}>{authUser?.name || ''}</Text>
+            <Text style={styles.detailValue}>{loading ? 'Loading...' : (authUser?.name || '')}</Text>
           </View>
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>class:</Text>
-            <Text style={styles.detailValue}>{authUser?.class || ''}</Text>
+            <Text style={styles.detailValue}>{loading ? 'Loading...' : (authUser?.class || '')}</Text>
           </View>
            <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>school:</Text>
-            <Text style={styles.detailValue}>{authUser?.school || ''}</Text>
+            <Text style={styles.detailValue}>{loading ? 'Loading...' : (authUser?.school || '')}</Text>
           </View>
         </View>
         <View style = {styles.logOutContainer}>
